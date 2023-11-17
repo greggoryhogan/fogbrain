@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-9 col-md-9">
             <p>Save those pesky dates you keep forgetting because, let&rsquo;s face it, you&rsquo;re getting old.</p>
-            <p>It looks like you aren&rsquo;t registered or signed in. We don&rsquo;t use passwords here, you&rsquo;ll just forget that too, so enter your email below to get a passcode to login or register.</p>
+            <p>It looks like you aren&rsquo;t registered or signed in. We don&rsquo;t use passwords here, you&rsquo;ll just forget that too, so enter your email below to get a passcode to login or register. P.S. We&rsquo;re new, check your spam folder.</p>
         </div>
         <div class="col-12 col-md-9">
             <form id="login" class="flex">
