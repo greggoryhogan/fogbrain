@@ -3,6 +3,7 @@ html {
   height: 100%;
   padding: 0;
   margin: 0;
+  overflow-x: hidden;
 }
 body {
     background: #008080;
@@ -16,6 +17,7 @@ body {
     box-sizing: border-box;
     width: 100%;
     overflow-x: hidden;
+    position:relative;
     /*background-image: url('../img/fogbrain-2.png');
     background-size: contain;
     background-position: bottom;
@@ -28,6 +30,9 @@ h1, h2, h3, h4, h5, h6 {
     text-transform: uppercase;
 }
 header {
+    h1 {
+        margin: 0;
+    }
     z-index: 10;
     .header-title {
         text-transform: uppercase;
@@ -120,7 +125,7 @@ footer {
         display: flex;
         list-style: none;
         margin: 0;
-        padding: 15px 0;
+        padding: 45px 0 15px 0;
         gap: 10px;
         justify-content: center;
         a {
@@ -172,4 +177,7 @@ img {
             }
         }
     }
+}
+.overlay-bg {
+    background: rgba(0,128,128,.6);
 }

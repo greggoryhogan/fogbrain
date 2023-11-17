@@ -8,7 +8,7 @@
             <div class="col-9 col-md-9">
                 <?php echo '<h1>'.get_the_title().'</h1>'; ?>
             </div>
-            <div class="col-12 col-md-9">
+            <div class="col-12 col-md-9 overlay-bg">
                 <?php the_content(); ?>
             </div>
         </div><?php 
