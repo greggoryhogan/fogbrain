@@ -1,0 +1,17 @@
+{
+  "name": "fogbrain",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "watch": "node-sass --watch wp-content/themes/fogbrain/scss -o wp-content/themes/fogbrain/css --output-style compressed"
+  },
+  "dependencies": {
+    "node-sass": "^9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greggoryhogan/fogbrain.git"
+  },
+  "author": "Greggory Hogan"
+}
