@@ -246,7 +246,7 @@ function send_login_code_callback() {
 		if($transient_string === false) {
 			set_transient( 'access-code-'.$random_number, $email, 10 * MINUTE_IN_SECONDS );
 			$message = '<p style="text-align: center;">Your login code for Fog Brain is:</p>';
-			$message .= '<h2 style="text-align: center;">'.$random_number.'</h2>';
+			$message .= '<h2 style="text-align: center; leter-spacing: 8px;">'.$random_number.'</h2>';
 			$message .= '<p style="text-align: center;">This code is valid for 10 minutes. Please go back to the Fog Brain login page and enter your code.</p>';
 			$message .= '<p style="text-align: center;">You can also click the link below to log in:<br><a href="'.get_bloginfo('url').'/login/?login-code='.$random_number.'">'.get_bloginfo('url').'/login/?login-code='.$random_number.'</a></p>';
 			$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
