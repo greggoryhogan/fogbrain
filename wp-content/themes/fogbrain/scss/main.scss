@@ -30,14 +30,17 @@ h1, h2, h3, h4, h5, h6 {
     text-transform: uppercase;
 }
 header {
+    z-index: 10;
+    padding: 30px 0 0;
     h1 {
         margin: 0;
     }
-    z-index: 10;
     .header-title {
         text-transform: uppercase;
         font-weight: 700;
         margin: 0;
+        display: inline-block;
+        text-decoration: none;
         @media all and (min-width: 768px) {
             font-size: 6rem;
             line-height: 5rem;
@@ -51,15 +54,116 @@ header {
          
         }
     }
-    padding: 30px 0;
-    a {
-        text-decoration: none;
+    .nav-toggle {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: none !important;
+        box-shadow: none;
+        border: none !important;
+        border-radius: 0;
+        text-shadow: none;
+        cursor: pointer;
+        padding: 0;
+        @media all and (min-width: 768px) {
+            top: 26px;
+        }
+        @media all and (max-width: 768px) {
+            top: 15px;
+        }
+        span {
+            display: block;
+            position: absolute;
+            right: 2px;
+            top: 0;
+            background-color: #0b2228;
+            transition: .2s all;
+            @media all and (min-width: 768px) {
+                height: 10px;
+                width: 60px;
+                &:nth-child(1) {
+                    transform: rotate(0) translateY(-20px);
+                }
+                &:nth-child(2) {
+                    transform: rotate(0) translateY(20px);
+                }
+            }
+            @media all and (max-width: 768px) {
+                width: 40px;
+                height: 8px;
+                &:nth-child(1) {
+                    transform: rotate(0) translateY(-13px);
+                }
+                &:nth-child(2) {
+                    transform: rotate(0) translateY(13px);
+                }
+            }
+        }
+        &.is-active span {
+            &:nth-child(1) {
+                transform: rotate(45deg);
+            }
+            &:nth-child(2) {
+                transform: scale(0);
+            }
+            &:nth-child(3) {
+                transform: rotate(-45deg);
+            }
+        }
+    }
+}
+nav {
+    transition: .2s max-height, .2s padding;
+    max-height: 0px;
+    overflow: hidden;
+    padding: 0;
+    @media all and (min-width: 768px) {
+        margin: 30px 0;
+    }
+    @media all and (max-width: 768px) {
+        margin: 15px 0;
+    }
+    &.is-active {
+        max-height: 600px;
+        background: #006868;
+        color: #fff;
+        padding: 30px 0;
+    }
+    .menu {
+        margin: 0;
+        list-style: none;
+        display: flex;
+        align-items: flex-start;
+        padding: 0;
+        font-size: 1.2rem;
+        @media all and (min-width: 768px) {
+            gap: 30px;
+        }
+        @media all and (max-width: 768px) {
+            flex-direction: column;
+            gap: 20px;
+        }
+        a {
+            color: #fff;
+            text-decoration: none;
+            &:hover {
+                color: #fefe00;
+            }
+        }
+        .current-menu-item {
+            a {
+                color: #fefe00;
+            }
+        }
     }
 }
 main {
     flex: 1;
     z-index: 5;
     font-weight: 500;
+    overflow: hidden;
+    position: relative;
+    padding-top: 5%;
     @media all and (min-width: 768px) {
         font-size: 2rem;
     }
@@ -82,6 +186,7 @@ main {
     }
     p {
         margin-top: 0;
+        margin-bottom: 30px;
     }
     form {
         input {
@@ -101,15 +206,7 @@ main {
                 }
             }
             &[type=submit] {
-                background: #ff5400;
-                font-weight: 600;
-                color: #fff;
-                padding: 15px 54px;
-                transition: .2s background-color;
-                cursor: pointer;
-                &:hover {
-                    background: #c84605;
-                }
+                
             }
         }
     }
@@ -118,25 +215,15 @@ main {
         flex-wrap: wrap;
         gap: 15px;
     }
-}
-footer {
-    position: relative;
-    .menu {
-        display: flex;
-        list-style: none;
-        margin: 0;
-        padding: 45px 0 15px 0;
-        gap: 10px;
-        justify-content: center;
-        a {
-            &:hover {
-                color: #ffff00;
-            }
+    .content {
+        position: relative;
+        z-index: 2;
+        margin-top: -2.5%;
+        @media all and (min-width: 768px) {
+            margin-bottom: 175px;
         }
     }
-}
-img {
-    &.fog {
+    .fog-bg {
         z-index: 1;
         display: block;
         position: absolute;
@@ -145,7 +232,7 @@ img {
             width: 55%;
         }
         height: auto;
-        &.fog-question {
+        &.fog-question-marks {
             @media all and (min-width: 768px) {
                 top: 50%;
                 transform: translateY(-50%);
@@ -161,23 +248,140 @@ img {
                 left: -8%;
             }
             bottom: 0;
-            opacity: .2;
+            opacity: .1;
         }
-        &.fog-answer {
+        &.fog-bulbs {
+            img {
+                display: block;
+                width: 100%;
+                height: auto;
+                opacity: 1;
+                transition: .6s opacity;
+            }
             @media all and (min-width: 768px) {
-                bottom: 0;
+                top: 0;
                 right: -5%;
             }
             @media all and (max-width: 768px) {
-                bottom: 20%;
-                right: -8%;
-                top: 10%;
-                right: -19%;
+                top: 0;
+                right: -15%;
                 /*opacity: .6;*/
+                img {
+                    opacity: .2;
+                }
             }
         }
     }
 }
-.overlay-bg {
-    background: rgba(0,128,128,.6);
+footer {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    @media all and (min-width: 768px) {
+        height: 175px;
+        padding-top: 175px;
+        margin-top: -175px;
+    }
+    @media all and (max-width: 768px) {
+        margin-top: 75px;
+    }
+    .menu {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 10px;
+        justify-content: center;
+    }
+    a {
+        &:hover {
+            color: #fefe00;
+        }
+    }
+    div {
+        padding-bottom: 10px;
+    }
+}
+.reminders {
+    margin-bottom: 30px;
+    .reminder {
+        margin-bottom: 15px;
+        &:last-of-type {
+            margin-bottom: 0;
+        }
+        span {
+            color: #fefe00;
+        }
+        .detail {
+            font-size: 16px;
+        }
+    }
+}
+.big-link {
+    background: #ff5400;
+    font-weight: 600;
+    color: #fff;
+    transition: .2s background-color;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    @media all and (min-width: 768px) {
+        padding: 15px 54px;
+    }
+    @media all and (max-width: 768px) {
+        padding: 15px 25px;
+    }
+    @media(max-width:576px) {
+        display: block;
+        text-align: center;
+    }
+    &:hover {
+        background: #c84605;
+    }
+}
+.has-arrow {
+    &:after {
+        margin-left: 20px;
+        transition: .2s margin;
+        content: '\2192';
+    }
+    &:hover {
+        &:after {
+            margin-right: -5px;
+            margin-left: 25px;
+        }
+    }
+}
+/** Home page only, should be a different stylesheet but who cares right now **/
+.home {
+    .reminders {
+        border: 4px solid rgba(11,34,40,.6);
+        border-radius: 20px;
+        padding: 30px;
+        background: rgba(0,128,128,.9);
+        margin-bottom: 70px;
+    }
+    .fog-bulbs {
+        @media all and (max-width: 768px) {
+            top: 0;
+            right: -15%;
+            /*opacity: .6;*/
+            .bulb1 {
+                opacity: 1;
+            }
+            .bulb2 {
+                opacity: .75;
+            }
+            .bulb3 {
+                opacity: .5;
+            }
+            .bulb4 {
+                opacity: .25;
+            }
+        }
+    }
 }
