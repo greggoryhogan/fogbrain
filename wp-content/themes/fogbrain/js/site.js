@@ -44,7 +44,9 @@
         if(!isEmail(email)) {
             $('.action-login .action-errors').append('<p>Please provide a valid email</p>');
         } else {
+            $('#emailsentto').text(email);
             $('.action-login').fadeOut();
+            $('.error-notice').remove();
             setTimeout(() => {
                 $('#login-code-input').val('');
                 $('.action-processing').fadeIn();

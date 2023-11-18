@@ -240,6 +240,13 @@ function my_mail_from_name( $name ) {
     return "Fog Brain";
 }
 
+add_action('after_setup_theme', 'remove_admin_bar');
+function remove_admin_bar() {
+	if (!current_user_can('administrator') && !is_admin()) {
+		show_admin_bar(false);
+	}
+}
+
 add_action( 'wp_ajax_nopriv_send_login_code', 'send_login_code_callback' );
 add_action( 'wp_ajax_send_login_code', 'send_login_code_callback' );
 function send_login_code_callback() {
@@ -349,7 +356,7 @@ function check_login_code_callback() {
 							'code_status' => 'valid',
 							'user_status' => 'success',
 							'post_status' => 'success',
-							'user_url' => get_the_permalink(get_the_ID())
+							'user_url' => get_the_permalink(get_the_ID()).'?login-action=returning-user'
 						)
 					);
 				}

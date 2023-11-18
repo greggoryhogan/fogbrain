@@ -35,7 +35,7 @@
                 <div class="action-errors"></div>
             </div>
             <div class="login-actions action-code <?php echo $code_active; ?>">
-                <p>A code has been sent to your email.</p>
+                <p>A code has been sent to your email, <span id="emailsentto"></span>.<br><span class="backtologin has-cursor">Need to update your email?</span></p>
                 <p>P.S. We&rsquo;re new, check your spam folder.</p>
                 <form id="login-code" class="flex">
                     <input type="text" value="<?php echo $login_code; ?>" placeholder="000000" id="login-code-input" autocomplete="off" />
