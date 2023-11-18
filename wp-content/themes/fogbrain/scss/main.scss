@@ -201,6 +201,7 @@ main {
             @media all and (max-width: 768px) {
                 font-size: inherit;
             }
+            color: #0b2228;
             padding: 15px;
             border-radius: 10px;
             border: none;
@@ -391,4 +392,45 @@ footer {
             }
         }
     }
+}
+.error-notice {
+    background: #006868;
+    padding: 15px 25px;
+    color: #fff;
+    @media all and (min-width: 768px) {
+        margin-bottom: 60px;
+    }
+    @media all and (max-width: 768px) {
+        margin-bottom: 30px;
+    }
+}
+.single-user-pages {
+    h1 {
+        margin-top: 0;
+    }
+}
+.login-actions {
+    display: none;
+    &.is-active {
+        display: block;
+    }
+    .action-errors {
+        p {
+            font-size: 80%;
+            color: #fff;
+            margin-top: 10px;
+        }
+    }
+    #login-code-input {
+        letter-spacing: 15px;
+        width: 300px;
+        text-align: center;
+        font-weight: 800;
+    }
+}
+.has-cursor {
+    cursor: pointer;
+}
+.backtologin {
+    color: #fefe00;
 }
