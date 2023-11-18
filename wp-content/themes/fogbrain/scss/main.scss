@@ -18,10 +18,13 @@ body {
     width: 100%;
     overflow-x: hidden;
     position:relative;
-    /*background-image: url('../img/fogbrain-2.png');
-    background-size: contain;
-    background-position: bottom;
-    background-repeat: no-repeat;*/
+    &.is-active {
+        overflow: hidden;
+        height: 100%;
+        footer {
+            opacity: 0;
+        }
+    }
 }
 a {
     color: #0b2228;
@@ -164,6 +167,8 @@ main {
     overflow: hidden;
     position: relative;
     padding-top: 5%;
+    opacity: 1;
+    transition: .2s opacity;
     @media all and (min-width: 768px) {
         font-size: 2rem;
     }
@@ -275,12 +280,14 @@ main {
 }
 footer {
     position: relative;
-    z-index: 5;
+    z-index: 4;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
+    opacity: 1;
+    transition: .2s opacity;
     @media all and (min-width: 768px) {
         height: 175px;
         padding-top: 175px;
