@@ -15,13 +15,13 @@
                     <?php if(is_home() || is_front_page()) { ?></h1><?php } ?>
                 </div>
                 <div class="col-3">
-                    
-                    <button class="nav-toggle">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button><!-- #primary-mobile-menu -->
-                
+                    <div class="nav-container">
+                        <button class="nav-toggle">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button><!-- #primary-mobile-menu -->
+                    </div>
                 </div>
             </div>
     </div>

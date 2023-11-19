@@ -35,15 +35,19 @@ function register_bhfe_scripts() {
 }
 add_action( 'wp_enqueue_scripts', 'register_bhfe_scripts' );
 
-add_action('wp_head','bhfe_early_head_customization',5);
+add_action('wp_head','bhfe_early_head_customization');
 function bhfe_early_head_customization() { 
 	?>
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black">
-	<meta name="apple-mobile-web-app-title" content="bhfe Repeating Arms">
-	<meta name="theme-color" content="#fc9d00" />
+	<meta name="apple-mobile-web-app-title" content="Fog Brain">
+	<meta name="theme-color" content="#008080" />
+	<?php 
+	if ( is_singular( 'brain' ) ) {
+        echo '<meta name="robots" content="noindex, nofollow">';
+    } ?>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<?php 
@@ -133,21 +137,21 @@ function bhfe_loginlogo_url($url) {
 add_action('init','register_post_types');
 function register_post_types() {
 	$labels = array(
-		"name" => __( "User Page", "" ),
-		"singular_name" => __( "User Page", "flms" ),
-		'all_items' => __( "User Pages", "flms" ),
-		'edit_item' => __( "Edit User Page", "flms" ),
-		'update_item' => __( "Update User Page", "flms" ),
-		'add_new' => __( "Add New User Page", "flms" ),
-		'add_new_item' => __( "Add New User Page", "flms" ),
-		'new_item_name' => __( "New User Page", "flms" ),
-		'menu_name' => __( "User Pages", "flms" ),
-		'back_to_items' => __( "&laquo; All User Pages", "flms" ),
-		'not_found' => __( "No user pages found.", "flms" ),
-		'not_found_in_trash' => __( "No user pages found in trash.", "flms" ),
+		"name" => __( "Brain", "" ),
+		"singular_name" => __( "Brain", "flms" ),
+		'all_items' => __( "Brains", "flms" ),
+		'edit_item' => __( "Edit Brain", "flms" ),
+		'update_item' => __( "Update Brain", "flms" ),
+		'add_new' => __( "Add New Brain", "flms" ),
+		'add_new_item' => __( "Add New Brain", "flms" ),
+		'new_item_name' => __( "New Brain", "flms" ),
+		'menu_name' => __( "Brains", "flms" ),
+		'back_to_items' => __( "&laquo; All Brains", "flms" ),
+		'not_found' => __( "No Brains found.", "flms" ),
+		'not_found_in_trash' => __( "No Brains found in trash.", "flms" ),
 	);
 	$args = array(
-		"label" => __( "User Page", "flms" ),
+		"label" => __( "Brain", "flms" ),
 		"labels" => $labels,
 		"description" => "",
 		"public" => true,
@@ -166,7 +170,7 @@ function register_post_types() {
 		"rewrite" => array( "slug" => 'u', ), //"with_front" => false 
 		//"taxonomies" => array( "supplier" ),
 	);
-	register_post_type( "user-pages", $args );
+	register_post_type( "brain", $args );
 }
 
 /**
@@ -177,7 +181,7 @@ add_action('init','add_rewrite_rules');
 function add_rewrite_rules() {
 	add_rewrite_rule(
 		"^u/([^/]+)/share/([^/]+)/?$",
-		'index.php?user-pages=$matches[1]&share=$matches[2]',
+		'index.php?brain=$matches[1]&share=$matches[2]',
 		'top'
 	);
 }
@@ -194,7 +198,7 @@ function check_login_page_for_user() {
 	if(is_page('login')) {
 		if($fogbrain_user_id > 0) {
 			$query = new WP_Query(array(
-				'post_type' => 'user-pages',
+				'post_type' => 'brain',
 				'posts_per_page' => 1,
 				'author' =>  $fogbrain_user_id,
 			));
@@ -208,17 +212,18 @@ function check_login_page_for_user() {
 			}	
 			wp_reset_postdata();
 		}	
-	} else if($post->post_type == 'user-pages') {
+	} else if(is_page('profile')) {
+		if($fogbrain_user_id == 0) {
+			wp_redirect( get_bloginfo('url').'/login/?logged-out=profile');
+		}	
+	} else if($post->post_type == 'brain') {
 		$login_redirect = get_bloginfo('url').'/login?access-error=';
 		//redirect users from viewing other peoples pages
 	 	if($post->post_author != $fogbrain_user_id) {
 			if(isset($wp->query_vars['share'])) {
 				$share_code = $wp->query_vars['share'];
-				$share_codes = maybe_unserialize(get_post_meta($post->ID,'share_codes',true));
-				if(!is_array($share_codes)) {
-					$share_codes = array();
-				}
-				if(!in_array($share_code,$share_codes)) {
+				$saved_share_code = get_post_meta($post->ID,'share_code',true);
+				if($share_code != $saved_share_code) {
 					wp_redirect($login_redirect.'invalid-code');	
 				}
 			} else {
@@ -274,6 +279,7 @@ function send_login_code_callback() {
 			$message .= '<h2 style="text-align: center; letter-spacing: 8px;">'.$random_number.'</h2>';
 			$message .= '<p style="text-align: center;">This code is valid for 10 minutes. Please go back to the Fog Brain login page and enter your code.</p>';
 			$message .= '<p style="text-align: center;">You can also click the link below to log in:<br><a href="'.get_bloginfo('url').'/login/?login-code='.$random_number.'">'.get_bloginfo('url').'/login/?login-code='.$random_number.'</a></p>';
+			$message .= '<p style="text-align: center;">If you did not request this login code, you can ignore this email. Your page is only available through your email account.</p>';
 			$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
 			wp_mail($email,'Your Fog Brain login code',$message);
 			$new_transient = true;
@@ -324,8 +330,8 @@ function check_login_code_callback() {
 				//create their post
 				$post_args = array(
 					'post_author' => $user_id,
-					'post_title' => "$username's Brain",
-					'post_type' => 'user-pages',
+					'post_title' => "$username's Foggy Brain",
+					'post_type' => 'brain',
 					'post_status' => 'publish'
 				);
 				$post_id = wp_insert_post($post_args);
@@ -340,6 +346,7 @@ function check_login_code_callback() {
 					);
 					wp_die();
 				} else {
+					add_user_meta($user_id,'user_profile_page',$post_id);
 					delete_transient( 'access-code-'.$code );
 					echo json_encode(
 						array(
@@ -357,7 +364,7 @@ function check_login_code_callback() {
 			wp_set_auth_cookie( $user->ID, 1, is_ssl() );
 			$args = array(
 				'author' => $user->ID,
-				'post_type' => 'user-pages',
+				'post_type' => 'brain',
 			);
 			$author_posts = new WP_Query( $args );
 			if( $author_posts->have_posts() ) {
@@ -380,4 +387,101 @@ function check_login_code_callback() {
 	}
 }
 
+add_action( 'wp_ajax_nopriv_check_profile_url', 'check_profile_url_callback' );
+add_action( 'wp_ajax_check_profile_url', 'check_profile_url_callback' );
+function check_profile_url_callback() {
+	$profile_url = sanitize_text_field( $_POST['profile_url'] );
+	$current_url = sanitize_text_field( $_POST['current_url'] );
+	if($profile_url == $current_url) {
+		echo json_encode(
+			array(
+				'error' => 'false',
+			)
+		);
+		wp_die();
+	} else if($profile_url !== '') {
+		$args = array(
+			'pagename' => $profile_url,
+			'post_type' => 'brain',
+		);
+		$author_posts = new WP_Query( $args );
+		if( $author_posts->have_posts() ) {
+			echo json_encode(
+				array(
+					'error' => 'That page name has been taken, please try another.',
+					'title' => $slug
+				)
+			);
+			wp_die();
+			wp_reset_postdata();
+		} else {
+			echo json_encode(
+				array(
+					'error' => 'false',
+				)
+			);
+			wp_die();
+		}
+	} else {
+		echo json_encode(
+			array(
+				'error' => 'Please enter a valid profile page name',
+			)
+		);
+		wp_die();
+	}
+}
+
+/**remove email for changed email notification, we have our own */
+add_filter('send_email_change_email','__return_false');
+
+add_action( 'wp_ajax_nopriv_save_profile', 'save_profile_callback' );
+add_action( 'wp_ajax_save_profile', 'save_profile_callback' );
+function save_profile_callback() {
+	$display_name = sanitize_text_field( $_POST['display_name'] );
+	$email = sanitize_email( $_POST['email'] );
+	$profile_url = sanitize_text_field( $_POST['profile_url'] );
+	$share_code = sanitize_text_field( $_POST['share_code'] );
+	global $current_user;
+	$current_email = $current_user->user_email;
+	update_user_meta($current_user->ID,'email_recovery',$current_email);
+	$message = '<p style="text-align:center;">Your Fog Brain email has been updated to '.$email.'. If you did not perform this action, please follow the link below to recover your email.</p>';
+	$message .= '<p style="text-align:center;"><a href="'.get_bloginfo('url').'?email-recovery='.$current_user->ID.'">'.get_bloginfo('url').'?email-recovery='.$current_user->ID.'</a></p>';
+	$message .= '<p style="text-align: center;">If you requested this email address change, you can ignore this email.</p>';
+	$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
+	wp_mail($current_email, 'Your Fog Brain Email has been updated',$message);
+	wp_update_user( array( 'ID' => $current_user->ID, 'display_name' => $display_name, 'user_email' => $email ) );
+	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
+	$args = array(
+		'ID'           => $profile_page_id,
+		'post_name' => $profile_url,
+		'post_title' => "$display_name's Foggy Brain",
+	);
+	wp_update_post( $args );
+	update_post_meta($profile_page_id,'share_code',$share_code);
+	echo json_encode(
+		array(
+			'page_url' => get_permalink($profile_page_id),
+		)
+	);
+	wp_die();
+}
+
+add_action('init','check_for_email_recovery');
+function check_for_email_recovery() {
+	if(isset($_GET['email-recovery'])) {
+		$user_id = sanitize_text_field( $_GET['email-recovery'] );
+		if($user_id != '' && $user_id > 0) {
+			//log the user out everywhere
+			$previous_email = get_user_meta($user_id,'email_recovery',true);
+			if($previous_email) {
+				$sessions = WP_Session_Tokens::get_instance($user_id);
+				$sessions->destroy_all();
+				wp_update_user( array( 'ID' => $user_id, 'user_email' => $previous_email ) );
+				delete_user_meta($user_id,'email_recovery');
+				wp_redirect( get_bloginfo('url').'/login/?action=email_recovered');
+			}
+		}
+	}
+}
 ?>

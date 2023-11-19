@@ -2,9 +2,9 @@
 <div class="container">
     <div class="row">
         <div class="col-9 col-xs-8 col-md-9">
-            <p>Save those pesky dates you keep forgetting. <br>Let&rsquo;s face it, you&rsquo;re getting old.</p>
+            <p>Save those pesky dates you keep forgetting and view them at a glance. <br>Let&rsquo;s face it, you&rsquo;re getting old.</p>
         </div>
-        <div class="col-9 col-xs-8 col-md-9">
+        <div class="col-10 col-xs-10 col-md-9">
             <p>Here&rsquo;s some reminders I&rsquo;ve saved&nbsp;-<p>
         </div>
         <div class="col-12 col-md-9 col-lg-8">

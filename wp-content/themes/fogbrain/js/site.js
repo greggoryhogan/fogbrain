@@ -4,7 +4,7 @@
     var user_id = site_js.user_id;
 
     //mobile nav toggle
-    $('.nav-toggle').on('click', function() {
+    $('.nav-container').on('click', function() {
         /*if($('body').hasClass('is-active')) {
             setTimeout(function() {
                 $('body').removeClass('is-active');
@@ -27,6 +27,10 @@
     function isEmail(email) {
         var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
         return regex.test(email);
+    }
+
+    function onlyLettersAndNumbers(str) {
+        return /^[A-Za-z0-9-]*$/.test(str);
     }
 
     function getParameterByName(name) {
@@ -126,17 +130,138 @@
 
     if($('.homepage-conditional-login-link').length) {
         if(user_id > 0) {
-            $('.homepage-conditional-login-link').text("Add to "+site_js.user.data.display_name+"'s Brain");
+            $('.homepage-conditional-login-link').text("Go to "+site_js.user.data.display_name+"'s Brain");
         }
     }
 
     //Update nav items
     
     if(user_id > 0) {
-        $('.menu .login-link a').text('My Brain');
+        $('.menu .login-link a').text('My Reminders');
         $('.menu .logout-link a').attr('href',site_js.logout_link);
     } else {
+        $('.menu .logged-in-only').remove();
         $('.menu .logout-link').remove();
     }
+
+    //profile field page name ajax
+    //setup before functions
+    var url_timer; 
+    var email_timer;                //timer identifier
+    var typing_timeout = 1000;  //time in ms, 5 seconds for example
+    
+    //on keyup, start the countdown
+    $('#email').on('keyup', function () {
+        clearTimeout(email_timer);
+        email_timer = setTimeout(check_email_validity, typing_timeout);
+    });
+    //on keydown, clear the countdown 
+    $('#email').on('keydown', function () {
+        clearTimeout(email_timer);
+    });
+
+    function check_email_validity() {
+        var email = $('#email').val();
+        if(!isEmail(email)) {
+            $('.email-error').addClass('is-active').text('Please enter a valid email');
+            $('#profile-form').addClass('has-errors');
+        } else {
+            $('.email-error').removeClass('is-active').text('');
+            $('#profile-form').removeClass('has-errors');
+        }
+    }
+
+    //on keyup, start the countdown
+    $('#profile-url').on('keyup', function () {
+        clearTimeout(url_timer);
+        url_timer = setTimeout(check_the_profile_url, typing_timeout);
+    });
+    //on keydown, clear the countdown 
+    $('#profile-url').on('keydown', function () {
+        clearTimeout(url_timer);
+    });
+
+    //user is "finished typing," do something
+    function check_the_profile_url () {
+        //do something
+        $('#profile-url').parent().removeClass('is-success').removeClass('is-error').addClass('is-loading');
+        $('.profile-page-name-error').removeClass('is-active').text('');
+        var profile_url = $('#profile-url').val().toLowerCase();
+        var current_url = $('#profile-url').attr('data-current-url');
+        if(onlyLettersAndNumbers(profile_url)) {
+            $.ajax({
+                url: site_js.ajax_url,
+                type: 'post',
+                data: {
+                    'action': 'check_profile_url',
+                    'profile_url' : profile_url,
+                    'current_url' : current_url,
+                    
+                }, success: function( data ) {
+                    var response = JSON.parse(data);
+                    if(response.error !== 'false') {
+                        $('#profile-url').parent().removeClass('is-loading').addClass('is-error');
+                        $('.profile-page-name-error').addClass('is-active').text(response.error);
+                        $('#profile-form').addClass('has-errors');
+
+                    } else {
+                        $('#profile-url').parent().removeClass('is-loading').addClass('is-success');
+                        $('#profile-url').addClass('success');
+                        $('#profile-form').removeClass('has-errors');
+                        $('.update-page-name-desc').text(profile_url);
+                    }
+                }
+            });
+        } else {
+            $('#profile-url').parent().removeClass('is-loading').addClass('is-error');
+            $('.profile-page-name-error').addClass('is-active').text('Use only letters and numbers');
+            $('#profile-form').addClass('has-errors');
+        }
+    }
+
+    
+    $('#share-code').bind('keyup', function(e) {
+        //on letter number
+        if(onlyLettersAndNumbers($('#share-code').val())) {
+            $('#profile-form').removeClass('has-errors');
+            $('.share-code-error').removeClass('is-active');
+            $('.update-share-name').text($('#share-code').val());
+        } else {
+            $('#profile-form').addClass('has-errors');
+            $('.share-code-error').addClass('is-active').text('Use only letters and numbers');
+        }
+    });
+
+    $(document).on('submit','#profile-form',function(e) {
+        e.preventDefault();
+        if($(this).hasClass('has-errors')) {
+            $('.form-errors').html('<div class="error-notice">There are errors in your profile.</div>');
+        } else {
+            var display_name = $('#name').val();
+            var email = $('#email').val();
+            var profile_url = $('#profile-url').val();
+            var share_code = $('#share-code').val();
+            $.ajax({
+                url: site_js.ajax_url,
+                type: 'post',
+                data: {
+                    'action': 'save_profile',
+                    'display_name' : display_name,
+                    'email' : email,
+                    'profile_url' : profile_url,
+                    'share_code' : share_code
+                }, success: function( data ) {
+                    var response = JSON.parse(data);
+                    if(response.page_url !== false) {
+                        $('.form-errors').html('<div class="error-notice">Profile updated!</div>');
+                    } else {
+                        $('.form-errors').html('<div class="error-notice">There was an error saving your profile. Please reload and try again.</div>');
+                    }
+                }
+            });
+        }
+       
+    });
+
 
 })(jQuery); // Fully reference jQuery after this point.
