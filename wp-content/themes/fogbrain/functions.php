@@ -22,10 +22,12 @@ function register_bhfe_scripts() {
 	}*/
 
 	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery'),'',true);
-	global $fogbrain_user_id;
+	global $fogbrain_user_id, $current_user;
 	wp_localize_script( 'fogbrain-main', 'site_js', array(
 		'ajax_url' => admin_url( 'admin-ajax.php' ),
-		'user_id' => $fogbrain_user_id
+		'user_id' => $fogbrain_user_id,
+		'user' => $current_user,
+		'logout_link' => wp_logout_url('/login')
 	));
 	
 	wp_enqueue_style('fog-fonts','https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
@@ -228,6 +230,17 @@ function check_login_page_for_user() {
 }
 
 /**
+ * Extend wp login time to 1 year
+ */
+add_filter( 'auth_cookie_expiration', 'fog_auth_cookie_expiration_30_days', 10, 3 );
+function fog_auth_cookie_expiration_30_days( $seconds, $user_id, $remember_me ) {
+    if ( $remember_me ) {
+        return 12 * MONTH_IN_SECONDS;
+    }
+    return $seconds;
+}
+
+/**
  * Set email content types to be html
  */
 add_filter( 'wp_mail_content_type','fogbrain_email_types' );
@@ -366,4 +379,5 @@ function check_login_code_callback() {
 		}
 	}
 }
+
 ?>

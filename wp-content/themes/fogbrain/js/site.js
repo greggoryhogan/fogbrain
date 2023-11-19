@@ -1,4 +1,8 @@
 (function($) {
+
+    //variables
+    var user_id = site_js.user_id;
+
     //mobile nav toggle
     $('.nav-toggle').on('click', function() {
         /*if($('body').hasClass('is-active')) {
@@ -114,9 +118,25 @@
        
     });
 
+
     //Autosubmit form when code is in url
     if (getParameterByName('login-code').length > 0) {
         $('#login-code').trigger('submit');
+    }
+
+    if($('.homepage-conditional-login-link').length) {
+        if(user_id > 0) {
+            $('.homepage-conditional-login-link').text("Add to "+site_js.user.data.display_name+"'s Brain");
+        }
+    }
+
+    //Update nav items
+    
+    if(user_id > 0) {
+        $('.menu .login-link a').text('My Brain');
+        $('.menu .logout-link a').attr('href',site_js.logout_link);
+    } else {
+        $('.menu .logout-link').remove();
     }
 
 })(jQuery); // Fully reference jQuery after this point.
