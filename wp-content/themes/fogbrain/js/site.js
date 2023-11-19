@@ -137,7 +137,7 @@
     //Update nav items
     
     if(user_id > 0) {
-        $('.menu .login-link a').text('My Reminders');
+        $('.menu .login-link a').text('My Brain');
         $('.menu .logout-link a').attr('href',site_js.logout_link);
     } else {
         $('.menu .logged-in-only').remove();
