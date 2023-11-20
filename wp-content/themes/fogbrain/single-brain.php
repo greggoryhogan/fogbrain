@@ -20,11 +20,11 @@
                         echo '</div>';
                     }
             }  ?>
-            <div class="col-9 col-md-9">
+            <div class="col-12 col-md-9">
                 <?php echo '<h1>'.get_the_author_meta('display_name').'&rsquo;s Foggy Brain</h1>'; ?>
                 <?php $share = get_post_meta($post->ID,'share_code',true);
                 if($share != '' && $author_id == $current_user->ID) {
-                    echo '<div class="share-link"><span id="share-link">'.get_permalink().'share/'.$share.'</span><div class="copy"></div><a href="/profile" class="edit"></div></div>';
+                    echo '<div class="share-link"><span id="share-link">'.get_permalink().'share/'.$share.'</span><span class="share-page-text">Share: </span><div class="copy"></div><a href="/profile" class="edit"></div></div>';
                 } ?>
             </div>
             <div class="col-12 col-md-9">

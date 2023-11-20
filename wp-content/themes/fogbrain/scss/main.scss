@@ -63,7 +63,7 @@ header {
         height: 100%;
         cursor: pointer;
         position: absolute;
-        right: 0;
+        right: 15px;
         @media all and (min-width: 768px) {
             padding-top: 26px;
             width: 70px;
@@ -526,41 +526,48 @@ footer {
         margin-top: -10px;
         display: flex;
         gap: 15px;
-        .edit {
+        @media all and (max-width: 768px) {
+            #share-link {
+                display: none;
+            }
+        }
+        @media all and (min-width: 768px) {
+            .share-page-text {
+                display: none;
+            }
+        }
+        .edit, 
+        .copy {
             opacity: .5;
             transition: .2 opacity;
-            -webkit-mask: url('../img/edit.svg') no-repeat 100% 100%;
-            mask: url('../img/edit.svg') no-repeat 100% 100%;
-            -webkit-mask-size: cover;
-            mask-size: cover;
+            mask-size: contain;
             background-color: #fff;
-            width: 25px;
-            height: 25px;
             display: inline-block;
+            transform: sclae(1);
+            transition: .2s transform;
+            mask-position: center;
+            mask-repeat: no-repeat;
+            @media all and (min-width: 768px) {
+                width: 25px;
+                height: 25px;
+            } 
+            @media all and (max-width: 768px) {
+                width: 25px;
+                height: 25px; 
+            }
             &:hover,
             &:focus {
                 opacity: 1;
                 cursor: pointer;
             }
         }
+        .edit {
+            -webkit-mask-image: url('../img/edit.svg');
+            mask-image: url('../img/edit.svg');
+        }
         .copy {
-            opacity: .5;
-            transition: .2 opacity;
-            -webkit-mask: url('../img/copy.svg') no-repeat 100% 100%;
-            mask: url('../img/copy.svg') no-repeat 100% 100%;
-            -webkit-mask-size: cover;
-            mask-size: cover;
-            background-color: #fff;
-            width: 25px;
-            height: 25px;
-            display: inline-block;
-            transform: sclae(1);
-            transition: .2s transform;
-            &:hover,
-            &:focus {
-                opacity: 1;
-                cursor: pointer;
-            }
+            -webkit-mask-image: url('../img/copy.svg');
+            mask-image: url('../img/copy.svg');
             &.copied {
                 transform: scale(1.8);
             }
