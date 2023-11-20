@@ -190,6 +190,7 @@ main {
     }
     h1 {
         margin-top: 0;
+        margin-bottom: 30px;
         @media all and (min-width: 768px) {
             font-size: 5rem;
             line-height: 4.8rem;
@@ -211,13 +212,14 @@ main {
         label {
             display: block;
         }
-        input {
+        input, select {
             @media all and (min-width: 768px) {
                 font-size: 120%;
             }
             @media all and (max-width: 768px) {
                 font-size: inherit;
             }
+            background-color: #fff;
             color: #0b2228;
             padding: 15px;
             border-radius: 10px;
@@ -232,14 +234,31 @@ main {
                 
             }
         }
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance:none; 
+            border: none;
+            background-image: url("data:image/svg+xml,<svg width='50' height='50' xmlns='http://www.w3.org/2000/svg'><path d='m0,6l12,12l12,-12l-24,0z'/><path fill='none' d='m0,0l50,0l0,50l-50,0l0,-50z'/></svg>");;
+            background-repeat: no-repeat;
+            background-position-x: 100%;
+            background-position-y: 100%;
+            option { font-size: 18px; }
+        }
         &.has-errors {
             input[type=submit] {
                 opacity: .5;
             }
         }
+        &#profile-form {
+            input[type=submit] {
+                margin-top: 30px;
+            }
+        }
         .profile-field {
             margin-bottom: 30px;
-            input {
+            input,
+            select {
                 width: 100%;
             }
             .check-status {
@@ -500,6 +519,54 @@ footer {
         margin-top: 0;
     }
 }*/
+.single-brain {
+    .share-link {
+        color: #fff;
+        font-size: 18px;
+        margin-top: -10px;
+        display: flex;
+        gap: 15px;
+        .edit {
+            opacity: .5;
+            transition: .2 opacity;
+            -webkit-mask: url('../img/edit.svg') no-repeat 100% 100%;
+            mask: url('../img/edit.svg') no-repeat 100% 100%;
+            -webkit-mask-size: cover;
+            mask-size: cover;
+            background-color: #fff;
+            width: 25px;
+            height: 25px;
+            display: inline-block;
+            &:hover,
+            &:focus {
+                opacity: 1;
+                cursor: pointer;
+            }
+        }
+        .copy {
+            opacity: .5;
+            transition: .2 opacity;
+            -webkit-mask: url('../img/copy.svg') no-repeat 100% 100%;
+            mask: url('../img/copy.svg') no-repeat 100% 100%;
+            -webkit-mask-size: cover;
+            mask-size: cover;
+            background-color: #fff;
+            width: 25px;
+            height: 25px;
+            display: inline-block;
+            transform: sclae(1);
+            transition: .2s transform;
+            &:hover,
+            &:focus {
+                opacity: 1;
+                cursor: pointer;
+            }
+            &.copied {
+                transform: scale(1.8);
+            }
+        }
+    }
+}
 .login-actions {
     display: none;
     &.is-active {

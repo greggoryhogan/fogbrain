@@ -241,6 +241,7 @@
             var email = $('#email').val();
             var profile_url = $('#profile-url').val();
             var share_code = $('#share-code').val();
+            var timezone = $('#timezone').val();
             $.ajax({
                 url: site_js.ajax_url,
                 type: 'post',
@@ -249,11 +250,14 @@
                     'display_name' : display_name,
                     'email' : email,
                     'profile_url' : profile_url,
-                    'share_code' : share_code
+                    'share_code' : share_code,
+                    'timezone' : timezone,
                 }, success: function( data ) {
+                    window.scrollTo(0, 0);
                     var response = JSON.parse(data);
                     if(response.page_url !== false) {
-                        $('.form-errors').html('<div class="error-notice">Profile updated!</div>');
+                        //$('.form-errors').html('<div class="error-notice">Profile updated!</div>');
+                        window.location.href = response.page_url;
                     } else {
                         $('.form-errors').html('<div class="error-notice">There was an error saving your profile. Please reload and try again.</div>');
                     }
@@ -262,6 +266,27 @@
         }
        
     });
+
+    //copy share link
+    $(document).on('click','.share-link .copy', function() {
+        $(this).addClass('copied');
+        setTimeout(function() {
+            $('.share-link .copy').removeClass('copied');
+        },100);
+        var text_to_copy = $('#share-link').text();
+        console.log(text_to_copy);
+        if (!navigator.clipboard){
+            var text_to_copy = $('#share-link').text();
+            var tempTextarea = $('<textarea>');
+            $('body').append(tempTextarea);
+            tempTextarea.val(text_to_copy).select();
+            document.execCommand('copy');
+            tempTextarea.remove();
+        } else{
+            navigator.clipboard.writeText(text_to_copy);
+        } 
+        
+    })
 
 
 })(jQuery); // Fully reference jQuery after this point.

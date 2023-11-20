@@ -1,33 +1,7 @@
 <?php get_header(); ?>
 <div class="container">
     <div class="row">
-        <?php
-        if(isset($_GET['access-error'])) {
-                echo '<div class="col-12 col-md-8">';
-                    $error = sanitize_text_field($_GET['access-error']);
-                    $message = 'You don&rsquo;t have access to that person&rsquo;s reminders.';
-                    if($error == 'invalid-code') {
-                        $message .= ' Check your share code with the user; it&rsquo;s possible they gave you the wrong code or deleted it.';
-                    } else {
-                        $message .= ' If you were trying to access your own page, please log in below.';
-                    }
-                    echo '<p class="error-notice">'.$message.'</p>';
-                echo '</div>';
-        } else if(isset($_GET['logged-out'])) {
-            $error = sanitize_text_field($_GET['logged-out']);
-            if($error == 'profile') {
-                echo '<div class="col-12 col-md-8">';
-                    echo '<p class="error-notice">Please log in to access your profile.</p>';
-                echo '</div>';
-            }
-        } else if(isset($_GET['action'])) {
-            $error = sanitize_text_field($_GET['action']);
-            if($error == 'email_recovered') {
-                echo '<div class="col-12 col-md-8">';
-                    echo '<p class="error-notice">Your email has been recovered. Please log in again using the recent recovery email address.</p>';
-                echo '</div>';
-            }
-        }  ?>
+        <?php fog_error_notifications();  ?>
         <div class="col-12 col-md-9">
             <?php if(isset($_GET['login-code'])) {
                 $login_active = '';

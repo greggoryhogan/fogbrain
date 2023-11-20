@@ -206,7 +206,11 @@ function check_login_page_for_user() {
 			if ($query->have_posts()) {
 				while ($query->have_posts()) {
 					$query->the_post();
-					wp_redirect( get_permalink(get_the_ID()));
+					$redirect = get_permalink(get_the_ID());
+					if(isset($_GET['access-error'])) {
+						$redirect .= '?access-error='.sanitize_text_field( $_GET['access-error'] );
+					}
+					wp_redirect( $redirect );
 					exit;
 				}
 			}	
@@ -442,6 +446,7 @@ function save_profile_callback() {
 	$email = sanitize_email( $_POST['email'] );
 	$profile_url = sanitize_text_field( $_POST['profile_url'] );
 	$share_code = sanitize_text_field( $_POST['share_code'] );
+	$timezone = sanitize_text_field( $_POST['timezone'] );
 	global $current_user;
 	$current_email = $current_user->user_email;
 	update_user_meta($current_user->ID,'email_recovery',$current_email);
@@ -451,6 +456,7 @@ function save_profile_callback() {
 	$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
 	wp_mail($current_email, 'Your Fog Brain Email has been updated',$message);
 	wp_update_user( array( 'ID' => $current_user->ID, 'display_name' => $display_name, 'user_email' => $email ) );
+	update_user_meta( $current_user->ID, 'timezone', $timezone );
 	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
 	$args = array(
 		'ID'           => $profile_page_id,
@@ -461,7 +467,7 @@ function save_profile_callback() {
 	update_post_meta($profile_page_id,'share_code',$share_code);
 	echo json_encode(
 		array(
-			'page_url' => get_permalink($profile_page_id),
+			'page_url' => get_permalink($profile_page_id).'?profile=updated',
 		)
 	);
 	wp_die();
@@ -483,5 +489,52 @@ function check_for_email_recovery() {
 			}
 		}
 	}
+}
+
+function fog_error_notifications() {
+	if(isset($_GET['access-error'])) {
+		echo '<div class="col-12 col-md-8">';
+			$error = sanitize_text_field($_GET['access-error']);
+			$message = 'You don&rsquo;t have access to that person&rsquo;s reminders.';
+			if($error == 'invalid-code') {
+				$message .= ' Check your share code with the user to confirm their shareable link.';
+			} else {
+				$message .= ' If you were trying to access your own page, please log in below.';
+			}
+			echo '<p class="error-notice">'.$message.'</p>';
+		echo '</div>';
+	}
+	if(isset($_GET['logged-out'])) {
+		$error = sanitize_text_field($_GET['logged-out']);
+		if($error == 'profile') {
+			echo '<div class="col-12 col-md-8">';
+				echo '<p class="error-notice">Please log in to access your profile.</p>';
+			echo '</div>';
+		}
+	}
+	if(isset($_GET['action'])) {
+		$error = sanitize_text_field($_GET['action']);
+		if($error == 'email_recovered') {
+			echo '<div class="col-12 col-md-8">';
+				echo '<p class="error-notice">Your email has been recovered. Please log in again using the recent recovery email address.</p>';
+			echo '</div>';
+		}
+	} 
+	if(isset($_GET['registration'])) {
+		$error = sanitize_text_field($_GET['registration']);
+		if($error == 'successful') {
+			echo '<div class="col-12 col-md-8">';
+				echo '<p class="error-notice">Registration successful! Any time you need to log in again, just use the email in your account. You can configure your account settings on your <a href="/profile" title="profile">profile page</a>.</p>';
+			echo '</div>';
+		}
+	} else if(isset($_GET['profile'])) {
+		$action = sanitize_text_field($_GET['profile']);
+		if($action == 'updated') {
+			echo '<div class="col-12 col-md-8">';
+				echo '<p class="error-notice">Profile updated!</p>';
+			echo '</div>';
+		}
+		
+	} 
 }
 ?>
