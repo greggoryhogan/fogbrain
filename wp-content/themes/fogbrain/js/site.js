@@ -253,12 +253,12 @@
                     'share_code' : share_code,
                     'timezone' : timezone,
                 }, success: function( data ) {
-                    window.scrollTo(0, 0);
                     var response = JSON.parse(data);
                     if(response.page_url !== false) {
                         //$('.form-errors').html('<div class="error-notice">Profile updated!</div>');
                         window.location.href = response.page_url;
                     } else {
+                        window.scrollTo(0, 0);
                         $('.form-errors').html('<div class="error-notice">There was an error saving your profile. Please reload and try again.</div>');
                     }
                 }
