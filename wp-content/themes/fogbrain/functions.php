@@ -334,7 +334,7 @@ function check_login_code_callback() {
 				//create their post
 				$post_args = array(
 					'post_author' => $user_id,
-					'post_title' => "$username",
+					'post_title' => "$username's Foggy Brain",
 					'post_type' => 'brain',
 					'post_status' => 'publish'
 				);
