@@ -492,7 +492,7 @@ footer {
         }
     }
 }
-.reminder-category {
+.reminder-summary {
     h2 {
         margin-bottom: 20px;
         border-bottom: 4px solid #006868;
@@ -509,14 +509,27 @@ footer {
             display: none;
         }
     }
-    .done-editing {
-        display: none;
+    .edit-reminders {
+        font-size: 18px;
+        display: inline-block;
     }
     .reminder-content {
         opacity: 1;
         transition: .2s opacity;
     }
+    .big-link {
+        display: inline-block;
+        margin: 30px 10px 30px 0;
+        font-size: 18px;
+        &:last-of-type {
+            margin-right: 0!important;
+        }
+    }
+    .done-editing {
+        display: none;
+    }
     &.is-editing {
+        
         .reminders {
             .reminder {
                 display: flex;
@@ -536,7 +549,9 @@ footer {
             display: inline-block;
             font-size: 18px;
         }
-        .edit {
+        #add-reminder,
+        .edit,
+        .edit-reminders {
             display: none;
         }
         .to-be-removed {
@@ -679,11 +694,6 @@ footer {
             }
         }
     }
-    #add-reminder {
-        display: inline-block;
-        margin: 30px 0;
-        font-size: 18px;
-    }
     .reminder-form {
         max-height: 0px;
         overflow: hidden;
@@ -691,6 +701,49 @@ footer {
         
         &.is-active {
             max-height: 999px;
+        }
+        #reminder-form {
+            font-size: 18px;
+            &.is-loading {
+                position: relative;
+                &:before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,128,128,.7);
+                }
+                &:after {
+                    content: '';
+                    background-image: url('../img/loading.gif');
+                    width: 60px;
+                    height: 60px;
+                    position: absolute;
+                    top: 30%;
+                    left: 50%;
+                    transform: translate(-50%,-50%);
+                    background-size: contain;
+                }
+            }
+            .error-notice {
+                margin-bottom: 30px;
+            }
+            input[type="text"],
+            textarea {
+                width: 100%;
+                font-size: inherit;
+                margin-bottom: 20px;
+            }
+            textarea {
+                border-radius: 10px;
+                border: none;
+                padding: 10px;
+            }
+            input[type="submit"] {
+                margin-top: 30px;
+            }
         }
         .gform_wrapper {
             form {
@@ -939,4 +992,11 @@ footer {
 .delete {
     -webkit-mask-image: url('../img/x.svg');
     mask-image: url('../img/x.svg');
+}
+pre {
+    white-space: pre-wrap;       /* Since CSS 2.1 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }

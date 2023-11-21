@@ -1002,17 +1002,209 @@ function update_reminder_categories_callback() {
 		$sanitized_saved_ids = array_map( 'intval', $saved );
 	}
 	
-	$category = sanitize_text_field( $_POST['category'] );
+	
 	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
-	$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'reminders',true));
+	$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'user_reminders',true));
 	$new_save = array();
-	if(isset($saved_reminders["$category"])) {
+	//if(isset($saved_reminders["$category"])) {
 		foreach($sanitized_saved_ids as $key) {
-			$new_save[] = $saved_reminders["$category"]["$key"];
+			$new_save[] = $saved_reminders["$key"];
 		}
-		$saved_reminders["$category"] = $new_save;
-		update_post_meta($profile_page_id,'reminders',$saved_reminders);
-	}
+		$saved_reminders = $new_save;
+		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
+	//}
 	wp_die();
+}
+
+
+function get_chat_gpt_response($prompt) {
+	set_time_limit(0);
+	$url = 'https://api.openai.com/v1/chat/completions';
+	$data = array(
+		'model' => 'gpt-3.5-turbo', //gpt-4, gpt-3.5-turbo
+		'temperature' => (int) '.1',
+		'messages' => array(
+			array(
+				'role' => 'system',
+				'content' => 'You are a computer designed to extract information from a string. You have no emotion. Do not provide extra response other thasn the array.'
+			),
+			array(
+				'role' => 'user',
+				'content' => "Extract information from the following prompt - $prompt . Return an array. Key 'date' is the date. Key 'isbirthday' is a bool variable whethis this prompt is related to a birthday, born day, or date of birth. Key 'aboutme' is a bool variable, true when the prompt is information about me and false when the information is about someone else. Key 'subject' is who I am talking about in relation to me, from your perspective. Key 'predicate' is the subject of my prompt in relation to me, from your perspective."
+			),
+			
+		)
+	);
+	//$query_url = $url.'?'.http_build_query($data);
+	$args = array(
+		'headers'     => array(
+			'Content-Type' => 'application/json',
+			'Authorization' => 'Bearer ' . FOG_CHATGPT_KEY,
+		),
+		'timeout'     => '30',
+		'body' => json_encode($data),
+	); 
+	$result = wp_remote_post( $url, $args );
+	if(!is_wp_error( $result )) {
+		$jsonResponse = json_decode(wp_remote_retrieve_body($result), true);
+		$generatedText = '';
+		//echo '<pre>';
+		if (isset($jsonResponse['choices']) && count($jsonResponse['choices']) > 0) {
+			$choices = $jsonResponse['choices'][0];
+			$message = json_decode($choices['message']['content']);
+			if(!empty($message)) {
+				return array(
+					'error' => 0,
+					'message' => $message
+				);
+			} else {
+				//print_r($jsonResponse['choices']);
+				return array(
+					'error' => 1,
+					'message' => array()
+				);
+			}
+			/*$prompt = $message[0]->phrase;
+			$date = $message[0]->date;
+			$isbirthday = $message[0]->isbirthday;
+			echo $prompt .' <br>';
+			echo $date .'<br>';
+			echo $isbirthday;*/
+			//print_r($date);
+			//print_r($message);
+		} else {
+			//echo 'not choices';
+			//print_r($jsonResponse);
+		}
+		//echo '</pre>';
+		
+	} else {
+		//echo $result->get_error_message();
+	}
+}
+
+add_action( 'wp_ajax_nopriv_add_gpt_reminder', 'add_gpt_reminder_callback' );
+add_action( 'wp_ajax_add_gpt_reminder', 'add_gpt_reminder_callback' );
+function add_gpt_reminder_callback() {
+	global $current_user;
+	$prompt = sanitize_text_field($_POST['prompt']);
+	$note = sanitize_text_field($_POST['note']) ?? '';
+	$public = sanitize_text_field($_POST['public']) ?? '';
+
+	$response = get_chat_gpt_response($prompt);
+	if($response['error'] == 1) {
+		echo json_encode(
+			array(
+				'error' => 1
+			)
+		);
+		wp_die();
+	} else {
+		$message = $response['message'];
+		
+		$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
+		$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'user_reminders',true));
+		if(!is_array($saved_reminders)) {
+			$saved_reminders = array();
+		}
+		$index = count($saved_reminders);
+		$saved_reminders[] = array(
+			'date' => $message->date,
+			'isbirthday' => $message->isbirthday,
+			'aboutme' => $message->aboutme,
+			'subject' => $message->subject,
+			'predicate' => $message->predicate,
+			'note' => $note,
+			'public' => $public,
+		);
+		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
+		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
+		$reminder .= process_gpt_reminder($message->date, $message->isbirthday, $message->aboutme, "$message->subject", "$message->predicate", "$note");
+		$reminder .= '</div><div class="delete"></div></div>';
+		echo json_encode(
+			array(
+				'error' => 0,
+				'reminder' => $reminder,
+			)
+		);
+		wp_die();
+	}
+
+	wp_die();
+}
+
+function process_gpt_reminders($reminders) {
+	global $current_user;
+	$user_timezone = get_user_meta($current_user->ID,'timezone',true);
+	if($user_timezone == '') {
+		$user_timezone = 'America/New_York';
+	}
+	
+	foreach($reminders as $index => $reminder) {
+		//print_r($reminder);
+		if(isset($reminder['date'])) {
+			$date = $reminder['date'];
+			$isbirthday = $reminder['isbirthday'] ?? false;
+			$aboutme = $reminder['aboutme'] ?? false;
+			$subject = $reminder['subject'];
+			$predicate = $reminder['predicate'];
+			$note = $reminder['note'];
+			//echo '<pre>'.print_r($reminder,true).'</pre>';
+			
+			echo '<div class="reminder" data-id="'.$index.'">';
+				echo '<div class="handle"></div>';
+				echo '<div class="reminder-content">';
+					echo process_gpt_reminder($date, $isbirthday, $aboutme, $subject, $predicate, $note, $user_timezone);
+				echo '</div>';
+				echo '<div class="delete"></div>';
+			echo '</div>';
+		
+		}
+		/*
+		$time_calulation = DateTime::createFromFormat('Y-m-d', $reminder['date'], $tz)->diff(new DateTime('now', $tz));
+								if($time_calulation->invert == 1) {
+									//past
+									$time = $time_calulation->days;
+									$future = true;
+								}
+								*/
+	}
+}
+
+function process_gpt_reminder($date, $isbirthday, $aboutme, $subject, $predicate, $note = false, $timezone = false) {
+	$return = '';
+	if($timezone === false) {
+		$timezone = 'America/New_York';
+	}
+	$tz  = new DateTimeZone($timezone);
+	$normalized_date = date('Y-m-d', strtotime($date));
+	$time_calulation = DateTime::createFromFormat('Y-m-d', $normalized_date, $tz)->diff(new DateTime('now', $tz));
+	if($isbirthday) {
+		if($time_calulation->y == 0) {
+			if($time_calulation->m  > 0) {
+				if($time_calulation->m == 1) {
+					$time = "<span>$time_calulation->m month old</span>.";
+				} else {
+					$time = "<span>$time_calulation->m months old</span>.";
+				}
+			} else {
+				$time = "<span>$time_calulation->d days old</span>.";
+			}
+		} else {
+			$time = "<span>$time_calulation->y years old</span>.";
+		}
+		$ignore_me = array('you','I','myself');
+		if($aboutme && in_array($subject,$ignore_me)) {
+			$return .= "You are $time";
+		} else {
+			$return .= "$subject is $time";
+		}
+	}
+	$return .= '<div class="detail">';
+		if($note !== false) {
+			$return .= $note;
+		}
+	$return .= '</div>';
+	return $return;
 }
 ?>

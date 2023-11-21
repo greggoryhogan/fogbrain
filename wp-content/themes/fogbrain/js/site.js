@@ -351,11 +351,13 @@
 
     $(document).on('click','#add-reminder',function() {
         if($('.reminder-form').hasClass('is-active')) {
-            //$('.reminder-form').removeClass('is-active');
-            //$(this).text('Add Reminder');
-            window.location.href = window.location.href;
+            $('.reminder-form').removeClass('is-active');
+            $(this).text('Add Reminder');
+            $('.edit-reminders').show();
+            //window.location.href = window.location.href;
         } else {
             $('.reminder-form').addClass('is-active');
+            $('.edit-reminders').hide();
             $(this).text('Cancel');
         }
     });
@@ -370,26 +372,24 @@
     }
 
     var sortList = '';
-    $(document).on('click','.reminder-category .edit',function() {
-        if($( '.reminder-category .reminders' ).hasClass('ui-sortable')) {
+    $(document).on('click','.edit-reminders',function() {
+        /*if($( '.reminder-category .reminders' ).hasClass('ui-sortable')) {
             $('.is-editing').removeClass('is-editing');
             $( '.ui-sortable' ).sortable('disable');
             
         }
-        var category = $(this).attr('data-category');
-        $( '.reminder-category.'+ category ).addClass('is-editing');
-        $( '.reminder-category.'+ category +' .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
+        var category = $(this).attr('data-category');*/
+        $( '.reminder-summary' ).addClass('is-editing');
+        $( '.reminder-summary .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
             sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
           } 
         });
     });
 
     $(document).on('click','.done-editing',function() {
-        console.log(sortList);
-        var category = $(this).attr('data-category');
-        $( '.reminder-category.'+ category +' .reminders' ).sortable('disable');
+        $( '.reminder-summary .reminders' ).sortable('disable');
         var save = [];
-        $( '.reminder-category.'+ category +' .reminder').each(function() {
+        $( '.reminder-summary .reminder').each(function() {
             if(!$(this).hasClass('to-be-removed')) {
                 save.push($(this).attr('data-id'));
             }
@@ -400,11 +400,10 @@
             data: {
                 'action': 'update_reminder_categories',
                 'save' : save,
-                'category' : category
             }, success: function( data ) {
                 $('.to-be-removed').fadeOut().remove();
-                $( '.reminder-category.'+ category ).removeClass('is-editing');
-                $( '.reminder-category').each(function() {
+                $( '.reminder-summary' ).removeClass('is-editing');
+                $( '.reminder-summary').each(function() {
                     if(!$(this).find('.reminder').length) {
                         $(this).remove();
                     }
@@ -415,6 +414,46 @@
 
     $(document).on('click','.reminder .delete',function() {
         $(this).parent().toggleClass('to-be-removed');
-    })
+    });
+
+
+    //chatgpt reminder form
+    $(document).on('submit','#reminder-form',function(e) {
+        e.preventDefault();
+        $('#reminder-form .error-notice').remove();
+        var prompt = $('#prompt').val();
+        var note = $('#note').val();
+        var public = $("#public").is(':checked');
+        if(prompt == '') {
+            $('#reminder-form').prepend('<div class="error-notice is-active">Please provide a reminder.</div>');
+        } else {
+            $('#reminder-form').addClass('is-loading')
+            $.ajax({
+                url: site_js.ajax_url,
+                type: 'post',
+                data: {
+                    'action': 'add_gpt_reminder',
+                    'prompt' : prompt,
+                    'note' : note,
+                    'public' : public,
+                    
+                }, success: function( data ) {
+                    response = JSON.parse(data);
+                    $('#reminder-form').removeClass('is-loading')
+                    if(response.error == 1) {
+                        $('#reminder-form').prepend('<div class="error-notice is-active">There was an error adding your reminder. Please try again.</div>');
+                    } else {
+                        $('.reminder-form').removeClass('is-active');
+                        $('#add-reminder').text('Add Reminder');
+                        $('.edit-reminders').show();
+                        $('#prompt').val('')
+                        $('#note').val('');
+                        $('.reminders').append(response.reminder);
+                    }
+                }
+            });
+        }
+       
+    });
 
 })(jQuery); // Fully reference jQuery after this point.

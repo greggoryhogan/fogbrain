@@ -37,6 +37,8 @@ define( 'DB_CHARSET', 'utf8mb4' );
 /** The database collate type. Don't change this if in doubt. */
 define( 'DB_COLLATE', '' );
 
+
+define( 'FOG_CHATGPT_KEY', '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');
 /**#@+
  * Authentication unique keys and salts.
  *
