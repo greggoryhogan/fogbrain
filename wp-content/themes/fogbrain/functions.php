@@ -20,8 +20,8 @@ function register_bhfe_scripts() {
 	if(is_page('login')) {
 		wp_enqueue_script('input-mask');
 	}*/
-
-	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery'),'',true);
+	wp_enqueue_script( 'jquery-ui-sortable' );
+	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable'),'',true);
 	global $fogbrain_user_id, $current_user;
 	wp_localize_script( 'fogbrain-main', 'site_js', array(
 		'ajax_url' => admin_url( 'admin-ajax.php' ),
@@ -334,7 +334,7 @@ function check_login_code_callback() {
 				//create their post
 				$post_args = array(
 					'post_author' => $user_id,
-					'post_title' => "$username's Foggy Brain",
+					'post_title' => "$username",
 					'post_type' => 'brain',
 					'post_status' => 'publish'
 				);
@@ -447,14 +447,30 @@ function save_profile_callback() {
 	$profile_url = sanitize_text_field( $_POST['profile_url'] );
 	$share_code = sanitize_text_field( $_POST['share_code'] );
 	$timezone = sanitize_text_field( $_POST['timezone'] );
+	$profile_image_id = sanitize_text_field($_POST['profile_image_id']);
 	global $current_user;
 	$current_email = $current_user->user_email;
-	update_user_meta($current_user->ID,'email_recovery',$current_email);
-	$message = '<p style="text-align:center;">Your Fog Brain email has been updated to '.$email.'. If you did not perform this action, please follow the link below to recover your email.</p>';
-	$message .= '<p style="text-align:center;"><a href="'.get_bloginfo('url').'?email-recovery='.$current_user->ID.'">'.get_bloginfo('url').'?email-recovery='.$current_user->ID.'</a></p>';
-	$message .= '<p style="text-align: center;">If you requested this email address change, you can ignore this email.</p>';
-	$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
-	wp_mail($current_email, 'Your Fog Brain Email has been updated',$message);
+
+	//delete old image if necessary
+	if($profile_image_id == '') {
+		//they deleted it
+		$profile_image = get_user_meta($current_user->ID, 'user_avatar', true);
+		if ($profile_image) {
+			$profile_image = json_decode($profile_image);
+			if (isset($profile_image->attachment_id)) {
+				wp_delete_attachment($profile_image->attachment_id, true);
+			}
+		}
+		delete_user_meta($current_user->ID, 'user_avatar');
+	}
+	if($current_email != $email) {
+		update_user_meta($current_user->ID,'email_recovery',$current_email);
+		$message = '<p style="text-align:center;">Your Fog Brain email has been updated to '.$email.'. If you did not perform this action, please follow the link below to recover your email.</p>';
+		$message .= '<p style="text-align:center;"><a href="'.get_bloginfo('url').'?email-recovery='.$current_user->ID.'">'.get_bloginfo('url').'?email-recovery='.$current_user->ID.'</a></p>';
+		$message .= '<p style="text-align: center;">If you requested this email address change, you can ignore this email.</p>';
+		$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
+		wp_mail($current_email, 'Your Fog Brain Email has been updated',$message);
+	}
 	wp_update_user( array( 'ID' => $current_user->ID, 'display_name' => $display_name, 'user_email' => $email ) );
 	update_user_meta( $current_user->ID, 'timezone', $timezone );
 	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
@@ -465,6 +481,9 @@ function save_profile_callback() {
 	);
 	wp_update_post( $args );
 	update_post_meta($profile_page_id,'share_code',$share_code);
+
+	
+
 	echo json_encode(
 		array(
 			'page_url' => get_permalink($profile_page_id).'?profile=updated',
@@ -472,6 +491,69 @@ function save_profile_callback() {
 	);
 	wp_die();
 }
+
+/** upload user avatar, thanks to gdarko - https://gist.github.com/gdarko/f858686eae428c1e56076e5e47b1b6d4 */
+add_action( 'wp_ajax_nopriv_update_user_avatar', 'update_user_avatar_callback' );
+add_action( 'wp_ajax_update_user_avatar', 'update_user_avatar_callback' );
+function update_user_avatar_callback() {
+	global $current_user;
+	$f = 0;
+    $_FILES[$f] = $_FILES[0];
+    
+    $user = new WP_User(get_current_user_id());
+    $json['status'] = 'error';
+  
+    //Check if the file is available && the user is logged in
+    if (!empty($_FILES[$f]) && $user->ID > 0) {
+      
+        $json = array();
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+       
+        //Handle the media upload using WordPress helper functions
+        $attachment_id = media_handle_upload($f, 0);
+        $json['aid']   = $attachment_id;
+        
+        //If error
+        if (is_wp_error($attachment_id)) {
+            $json['error'] = "Error.";
+        } else {
+            //delete current
+            $profile_image = get_user_meta($current_user->ID, 'user_avatar', true);
+            if ($profile_image) {
+                $profile_image = json_decode($profile_image);
+                if (isset($profile_image->attachment_id)) {
+                    wp_delete_attachment($profile_image->attachment_id, true);
+                }
+            }
+            
+            //Generate attachment in the media library
+            $attachment_file_path = get_attached_file($attachment_id);
+            $data                 = wp_generate_attachment_metadata($attachment_id, $attachment_file_path);
+            
+            //Get the attachment entry in media library
+            $image_full_attributes  = wp_get_attachment_image_src($attachment_id, 'full');
+            $image_thumb_attributes = wp_get_attachment_image_src($attachment_id, 'smallthumb');
+            
+            $arr = array(
+                'attachment_id' => $attachment_id,
+                'url' => $image_full_attributes[0],
+                'thumb' => $image_thumb_attributes[0]
+            );
+            
+            //Save the image in the user metadata
+            update_user_meta($current_user->ID, 'user_avatar', json_encode($arr));
+            
+            $json['src']    = $arr['thumb'];
+			$json['attachment_id'] = $attachment_id;
+            $json['status'] = 'ok';
+        }
+    }
+    //Output the json
+    die(json_encode($json));
+}
+
 
 add_action('init','check_for_email_recovery');
 function check_for_email_recovery() {
@@ -492,23 +574,32 @@ function check_for_email_recovery() {
 }
 
 function fog_error_notifications() {
+	if(isset($_GET['login-action'])) {
+		$action = sanitize_text_field($_GET['login-action']);
+		if($action == 'returning-user') {
+			global $current_user;
+			echo '<div class="col-12 col-md-8">';
+				echo '<p class="error-notice">Welcome back, '.$current_user->display_name.'!<span class="close-notification"></span></p>';
+			echo '</div>';
+		}
+	}
 	if(isset($_GET['access-error'])) {
 		echo '<div class="col-12 col-md-8">';
 			$error = sanitize_text_field($_GET['access-error']);
 			$message = 'You don&rsquo;t have access to that person&rsquo;s reminders.';
 			if($error == 'invalid-code') {
-				$message .= ' Check your share code with the user to confirm their shareable link.';
+				$message .= ' If you were given a share code, check with the user to confirm their profile is set to public.';
 			} else {
 				$message .= ' If you were trying to access your own page, please log in below.';
 			}
-			echo '<p class="error-notice">'.$message.'</p>';
+			echo '<p class="error-notice">'.$message.'<span class="close-notification"></span></p>';
 		echo '</div>';
 	}
 	if(isset($_GET['logged-out'])) {
 		$error = sanitize_text_field($_GET['logged-out']);
 		if($error == 'profile') {
 			echo '<div class="col-12 col-md-8">';
-				echo '<p class="error-notice">Please log in to access your profile.</p>';
+				echo '<p class="error-notice">Please log in to access your profile. <span class="close-notification"></span></p>';
 			echo '</div>';
 		}
 	}
@@ -524,17 +615,404 @@ function fog_error_notifications() {
 		$error = sanitize_text_field($_GET['registration']);
 		if($error == 'successful') {
 			echo '<div class="col-12 col-md-8">';
-				echo '<p class="error-notice">Registration successful! Any time you need to log in again, just use the email in your account. You can configure your account settings on your <a href="/profile" title="profile">profile page</a>.</p>';
+				echo '<p class="error-notice">Registration successful! Any time you need to log in again, just use the email in your account. You can configure your account settings on your <a href="/profile" title="profile">profile page</a>.<span class="close-notification"></span></p>';
 			echo '</div>';
 		}
 	} else if(isset($_GET['profile'])) {
 		$action = sanitize_text_field($_GET['profile']);
 		if($action == 'updated') {
 			echo '<div class="col-12 col-md-8">';
-				echo '<p class="error-notice">Profile updated!</p>';
+				echo '<p class="error-notice">Profile updated!<span class="close-notification"></span></p>';
 			echo '</div>';
 		}
 		
 	} 
+}
+
+
+add_filter( 'gform_pre_render_1', 'populate_events' ); //WI Special Order Form
+add_action( 'gform_admin_pre_render_1', 'populate_events' );
+function populate_events( $form ) {
+	//wp_enqueue_script('firearm-dropdown'); //We not longer do this
+    foreach ( $form['fields'] as &$field ) {
+        if ( $field->type != 'select' || strpos( $field->cssClass, 'event-types' ) === false ) {
+            continue;
+        }
+		$my = false;
+		if(strpos( $field->cssClass, 'primary' ) !== false) {
+			$my = true;
+		}
+        $field->placeholder = 'specify an event';
+		$field->choices = get_event_choices($my);
+	}
+    return $form;
+}
+
+add_filter( 'gform_pre_render_1', 'populate_relationships' ); //WI Special Order Form
+add_action( 'gform_admin_pre_render_1', 'populate_relationships' );
+function populate_relationships( $form ) {
+	//wp_enqueue_script('firearm-dropdown'); //We not longer do this
+    foreach ( $form['fields'] as &$field ) {
+        if ( $field->type != 'select' || strpos( $field->cssClass, 'relationship-types' ) === false ) {
+            continue;
+        }
+        $field->placeholder = 'specify the relationship';
+		$my = false;
+		if(strpos( $field->cssClass, 'primary' ) !== false) {
+			$my = true;
+		}
+		$field->choices = get_relationship_choices($my);
+	}
+    return $form;
+}
+/**
+ * Function to get rifle choices for dropdown, pulled from frontend and wp-admin
+ */
+function get_event_choices($my) {
+	$event_choices = array();
+	if($my) {
+		$event_choices[] = array( 'text' => 'My birthday', 'value' => 'birthday');
+		$event_choices[] = array( 'text' => 'My wedding', 'value' => 'wedding');
+		$event_choices[] = array( 'text' => 'Other', 'value' => 'other');
+		/*$event_choices[] = array( 'text' => 'My high school graduation', 'value' => 'hs-graduation');
+		$event_choices[] = array( 'text' => 'My college graduation', 'value' => 'college-graduation');*/
+	} else {
+		$event_choices[] = array( 'text' => 'birthday', 'value' => 'birthday');
+		$event_choices[] = array( 'text' => 'wedding', 'value' => 'wedding');
+		$event_choices[] = array( 'text' => 'other', 'value' => 'other');
+	}
+	return $event_choices;
+}
+
+function get_relationship_choices($my) {
+	$my_text = '';
+	if($my) {
+		$my_text = 'My ';
+	}
+	$relationship_choices = array();
+	$relationship_choices[] = array( 'text' => $my_text.'wife', 'value' => 'wife');
+	$relationship_choices[] = array( 'text' => $my_text.'husband', 'value' => 'husband');
+	$relationship_choices[] = array( 'text' => $my_text.'spouse', 'value' => 'spouse');
+	$relationship_choices[] = array( 'text' => $my_text.'friend', 'value' => 'friend');
+	$relationship_choices[] = array( 'text' => $my_text.'girlfriend', 'value' => 'girlfriend');
+	$relationship_choices[] = array( 'text' => $my_text.'boyfriend', 'value' => 'boyfriend');
+	$relationship_choices[] = array( 'text' => $my_text.'mother', 'value' => 'mother');
+	$relationship_choices[] = array( 'text' => $my_text.'father', 'value' => 'father');
+	$relationship_choices[] = array( 'text' => $my_text.'parent', 'value' => 'parent');
+	$relationship_choices[] = array( 'text' => $my_text.'grandmother', 'value' => 'grandmother');
+	$relationship_choices[] = array( 'text' => $my_text.'grandfather', 'value' => 'grandfather');
+	$relationship_choices[] = array( 'text' => $my_text.'grandparent', 'value' => 'grandparent');
+	$relationship_choices[] = array( 'text' => $my_text.'nephew', 'value' => 'nephew');
+	$relationship_choices[] = array( 'text' => $my_text.'niece', 'value' => 'niece');
+	$relationship_choices[] = array( 'text' => $my_text.'cousin', 'value' => 'cousin');
+	$relationship_choices[] = array( 'text' => $my_text.'aunt', 'value' => 'aunt');
+	$relationship_choices[] = array( 'text' => $my_text.'uncle', 'value' => 'uncle');
+	$relationship_choices[] = array( 'text' => $my_text.'dog', 'value' => 'dog');
+	$relationship_choices[] = array( 'text' => $my_text.'cat', 'value' => 'cat');
+	$relationship_choices[] = array( 'text' => $my_text.'pet', 'value' => 'pet');
+	return $relationship_choices;
+}
+
+/** create reminder and delete entry */
+add_action( 'gform_after_submission_1', 'create_reminder', 10, 2 );
+function create_reminder( $entry, $form ) {
+	global $current_user;
+	$entry_id = $entry['id'];
+	$relationship = $entry['1'];
+	if($relationship == 'myself') {
+		$event = $entry['4']; // or 19
+	} else {
+		$event = $entry['19']; // or 19
+	}
+	$date = $entry['10'];
+	$notes = $entry['11'];
+	$primary_relation = $entry['12'] ?? '';
+	$primary_relation_name = $entry['13'] ?? '';
+	$secondary_relation = $entry['15'] ?? '';
+	$secondary_relation_name = $entry['17'] ?? '';
+	$other = $entry['20'] ?? '';
+	$iswas = $entry['21'] ?? '';
+	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
+	$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'reminders',true));
+	if(!is_array($saved_reminders)) {
+		$saved_reminders = array();
+	}
+	if(!isset($saved_reminders["{$relationship}"])) {
+		$saved_reminders["{$relationship}"] = array();
+	}
+	if(!in_array($entry['id'],$saved_reminders["{$relationship}"])) {
+		//new reminders
+		$saved_reminders["{$relationship}"]["{$entry_id}"] = array(
+			'event' => $event, 
+			'date' => $date, 
+			'iswas' => $iswas, 
+			'primary_relation' => $primary_relation,  
+			'primary_relation_name' => $primary_relation_name, 
+			'secondary_relation' => $secondary_relation,  
+			'secondary_relation_name' => $secondary_relation_name, 
+			'other' => $other, 
+			'note' => $notes
+		);
+	} else {
+		//update the reminder
+	}
+	update_post_meta($profile_page_id,'reminders',$saved_reminders);
+	//delete entry
+    GFAPI::delete_entry( $entry['id'] );
+	
+}
+
+function print_user_reminders($reminders, $author_id) {
+	global $current_user;
+	$user_timezone = get_user_meta($current_user->ID,'timezone',true);
+	if($user_timezone == '') {
+		$user_timezone = 'America/New_York';
+	}
+	$tz  = new DateTimeZone($user_timezone);
+	foreach($reminders as $category => $reminder_items) {
+		if(!empty($reminder_items)) {
+			echo '<div class="reminder-category '.$category.'">';
+				echo '<h2>';
+				if($category == 'myself') {
+					echo 'About Me';
+				} else if($category == 'primary') {
+					echo '<span>Primary<span class="desktop-only"> Relationships</span></span>';
+				} else if($category == 'secondary') {
+					echo '<span>Secondary<span class="desktop-only"> Relationships</span></span>';
+				}
+				if($current_user->ID == $author_id) {
+					echo '<div class="edit" data-category="'.$category.'"></div>';
+				}
+				echo '</h2>';
+				echo '<div class="reminders">';
+					foreach($reminder_items as $index => $reminder) {
+						echo '<div class="reminder" data-id="'.$index.'">';
+							echo '<div class="handle"></div>';
+							echo '<div class="reminder-content">';
+								$time_calulation = DateTime::createFromFormat('Y-m-d', $reminder['date'], $tz)->diff(new DateTime('now', $tz));
+								if($time_calulation->invert == 1) {
+									//past
+									$time = $time_calulation->days;
+									$future = true;
+								} else {
+									$time = $time_calulation->y;
+									$future = false;
+								}
+								//$time = DateTime::createFromFormat('Y-m-d', $reminder['date'], $tz)->diff(new DateTime('now', $tz))->y;
+								switch ($reminder['event']) {
+									case 'birthday':
+										if($category == 'myself') {
+											echo "I am ";
+										} else if ($category == 'primary') {
+											if($reminder['primary_relation_name'] != '') {
+												echo $reminder['primary_relation_name'] .' ';
+												if($reminder['iswas'] != 'n/a') {
+													echo $reminder['iswas'].' ';
+												}
+											}
+										} else if ($category == 'secondary') {
+											if($reminder['primary_relation_name'] != '') {
+												echo $reminder['primary_relation_name'];
+												echo  '&rsquo;s ';
+											}
+											echo $reminder['secondary_relation'].', ';
+											echo $reminder['secondary_relation_name'] .', ';
+											if($reminder['iswas'] != 'n/a') {
+												echo $reminder['iswas'].' ';
+											}
+										}
+										if($reminder['iswas'] == 'was') {
+											echo ' born ';
+											if($time == 0) {
+												if($time_calulation->m > 0) {
+													if($time_calulation->m == 1) {
+														echo "<span>$time_calulation->m month ago</span>.";
+													} else {
+														echo "<span>$time_calulation->m months ago</span>.";
+													}
+												} else {
+													echo "<span>$test->d days ago</span>.";
+												}
+											} else {
+												echo "<span>$time years ago</span>.";
+											}
+										} else {
+											if($time == 0) {
+												if($time_calulation->m > 0) {
+													if($time_calulation->m == 1) {
+														echo "<span>$time_calulation->m month old</span>.";
+													} else {
+														echo "<span>$time_calulation->m months old</span>.";
+													}
+												} else {
+													echo "<span>$test->d days old</span>.";
+												}
+											} else {
+												echo "<span>$time years old</span>.";
+											}
+										}
+										break;
+									case 'anniversary':
+										if($category == 'myself') {
+											echo "I&rsquo;ve been married for ";
+										} else {
+											echo "They&rsquo;ve been married for ";
+										}
+										echo "<span>$time years</span>.";
+										break;
+									case 'wedding':
+										if($future) {
+											if($category == 'myself') {
+												echo "I will ";
+											} else if ($category == 'primary') {
+												echo $reminder['primary_relation_name'] .' will ';
+											} else if ($category == 'secondary') {
+												echo $reminder['primary_relation_name'].'&rsquo; ';
+												echo $reminder['secondary_relation'].', ';
+												echo $reminder['secondary_relation_name'] .', will ';
+											}
+											echo " be married in <span>$time days</span>.";
+											
+										} else {
+											if($category == 'myself') {
+												echo "I&rsquo;ve been married for ";
+											} else if ($category == 'primary') {
+												echo $reminder['primary_relation_name'] .' has been married for ';
+											} else if ($category == 'secondary') {
+												echo $reminder['primary_relation_name'] .'&rsquo; ';
+												echo $reminder['secondary_relation'].', ';
+												echo $reminder['secondary_relation_name'] .', has been married for ';
+											}
+											
+											if($time == 0) {
+												if($time_calulation->m > 0) {
+													if($time_calulation->m == 1) {
+														echo "<span>$time_calulation->m month</span>.";
+													} else {
+														echo "<span>$time_calulation->m months</span>.";
+													}
+												} else {
+													echo "<span>$test->d days</span>.";
+												}
+											} else {
+												echo "<span>$time years</span>.";
+											}
+											
+										}
+										break;
+									default:
+										if($category == 'myself') {
+											//echo "I am ";
+										} else if ($category == 'primary') {
+											if($reminder['primary_relation_name'] != '') {
+												echo $reminder['primary_relation_name'] .'&rsquo;s ';
+											}
+										} else if ($category == 'secondary') {
+											if($reminder['primary_relation_name'] != '') {
+												echo $reminder['primary_relation_name'];
+												echo  '&rsquo;s ';
+											}
+											echo $reminder['secondary_relation'].', ';
+											echo $reminder['secondary_relation_name'] .', ';
+											if($reminder['iswas'] != 'n/a') {
+												echo $reminder['iswas'];
+											}
+										}
+										if($future) {
+											echo $reminder['other'] ." is in <span>$time days</span>.";
+										} else {
+											echo $reminder['other'] .' ';
+											if($time == 0) {
+												if($time_calulation->m > 0) {
+													if($time_calulation->m == 1) {
+														echo "<span>$time_calulation->m month ago</span>.";
+													} else {
+														echo "<span>$time_calulation->m months ago</span>.";
+													}
+												} else {
+													echo "<span>$time_calulation->d days ago</span>.";
+												}
+											} else {
+												echo "<span>$time years ago</span>.";
+											}
+											
+										}
+								}
+								echo '<div class="detail">';
+									if($category == 'myself') {
+										if($reminder['event'] != 'other') {
+											$person = 'My ';
+										} else {
+											$person = '';
+										}
+									} else {
+										$person = 'Their ';
+									}
+									if($reminder['event'] != 'other') {
+										echo $person.$reminder['event'];
+										if($reminder['iswas'] != 'n/a') {
+											echo ' '. $reminder['iswas'].' ';
+										}
+										echo date('M d, Y', strtotime($reminder['date']));
+									} else {
+										if($future) {
+											echo $person.$reminder['other'];
+											if($reminder['iswas'] != 'n/a') {
+												echo ' '.$reminder['iswas'].' ';
+											} else {
+												echo ' ';
+											}
+											echo date('M d, Y', strtotime($reminder['date']));
+										} else {
+											echo $person.$reminder['other'];
+											if($reminder['iswas'] != 'n/a') {
+												echo ' '.$reminder['iswas'].' ';
+											} else {
+												echo ' ';
+											}
+											echo date('M d, Y', strtotime($reminder['date']));
+										}
+										
+									}
+									if(isset($reminder['note'])) {
+										if($reminder['note'] != '') {
+											echo '<br>Note: '.$reminder['note'];
+										}
+									}
+								echo '</div>';
+							echo '</div>';
+							echo '<div class="delete"></div>';
+						echo '</div>';
+					}
+				echo '</div>';
+				echo '<div class="big-link done-editing" data-category="'.$category.'">Finish Editing</div>';
+			echo '</div>';
+		}
+	}
+}
+
+add_action( 'wp_ajax_nopriv_update_reminder_categories', 'update_reminder_categories_callback' );
+add_action( 'wp_ajax_update_reminder_categories', 'update_reminder_categories_callback' );
+function update_reminder_categories_callback() {
+	global $current_user;
+	$saved = $_POST['save'];
+	if($saved == '') {
+		$sanitized_saved_ids = array();
+	} else {
+		$sanitized_saved_ids = array_map( 'intval', $saved );
+	}
+	
+	$category = sanitize_text_field( $_POST['category'] );
+	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
+	$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'reminders',true));
+	$new_save = array();
+	if(isset($saved_reminders["$category"])) {
+		foreach($sanitized_saved_ids as $key) {
+			$new_save[] = $saved_reminders["$category"]["$key"];
+		}
+		$saved_reminders["$category"] = $new_save;
+		update_post_meta($profile_page_id,'reminders',$saved_reminders);
+	}
+	wp_die();
 }
 ?>

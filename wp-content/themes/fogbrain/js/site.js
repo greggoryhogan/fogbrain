@@ -130,14 +130,14 @@
 
     if($('.homepage-conditional-login-link').length) {
         if(user_id > 0) {
-            $('.homepage-conditional-login-link').text("Go to "+site_js.user.data.display_name+"'s Brain");
+            $('.homepage-conditional-login-link').text("Go to "+site_js.user.data.display_name+"'s Reminders");
         }
     }
 
     //Update nav items
     
     if(user_id > 0) {
-        $('.menu .login-link a').text('My Brain');
+        $('.menu .login-link a').text('My Reminders');
         $('.menu .logout-link a').attr('href',site_js.logout_link);
     } else {
         $('.menu .logged-in-only').remove();
@@ -242,6 +242,7 @@
             var profile_url = $('#profile-url').val();
             var share_code = $('#share-code').val();
             var timezone = $('#timezone').val();
+            var profile_image_id = $('#profile_image_id').val();
             $.ajax({
                 url: site_js.ajax_url,
                 type: 'post',
@@ -252,6 +253,7 @@
                     'profile_url' : profile_url,
                     'share_code' : share_code,
                     'timezone' : timezone,
+                    'profile_image_id' : profile_image_id,
                 }, success: function( data ) {
                     var response = JSON.parse(data);
                     if(response.page_url !== false) {
@@ -265,6 +267,61 @@
             });
         }
        
+    });
+
+    //avatar
+    $('#avatar').on('change', function(event) {
+        $('#profile_image').addClass('is-loading');
+		files = event.target.files;
+		var cont = $(this).attr('data-cont');
+		var name = $(this).attr('name');
+
+		var data = new FormData();
+		$.each(files, function(key, value)
+		{
+			data.append(key, value);
+		});
+
+		data.append('action', 'update_user_avatar' );
+		data.append('type', $(this).data('type'));
+
+		//$(cont).html('<img src="/assets/images/preloader.gif" />');
+
+		$.ajax({
+            url: site_js.ajax_url,
+			type: "POST",             // Type of request to be send, called as method
+			data: data, // Data sent to server, a set of key/value pairs (i.e. form fields and values)
+			
+			contentType: false,       // The content type used when sending data to the server.
+			cache: false,             // To unable request pages to be cached
+			processData:false,        // To send DOMDocument or non processed data file it is set to false
+			success: function(data) {
+                $('#profile_image').removeClass('is-loading');
+				var response = JSON.parse(data);
+                if(response.status == 'ok') {
+                    $('.avatar-error').removeClass('is-active').text('');
+                    $('#profile_image').html('<img src="'+response.src+'" />');
+                    $('#profile_image_id').val(response.attachment_id);
+                    $('.delete-profile-photo').addClass('is-active');
+                } else {
+                    $('.avatar-error').addClass('is-active').text('There was an error uploading your image');
+                }
+			},
+			error: function(jqXHR, textStatus, errorThrown) {
+				// Handle errors here
+				console.log('ERRORS: ' + textStatus);
+                $('#profile_image').removeClass('is-loading');
+				$('.avatar-error').addClass('is-active').html('There was an error uploading your image');
+			}
+		});
+	
+	});
+
+    //delete profile pic
+    $(document).on('click','.delete-profile-photo',function() {
+        $('#profile_image').html('');
+        $('#profile_image_id').val('');
+        $(this).removeClass('is-active');
     });
 
     //copy share link
@@ -286,7 +343,78 @@
             navigator.clipboard.writeText(text_to_copy);
         } 
         
-    })
+    });
 
+    $(document).on('click','.close-notification',function() {
+        $(this).parent().fadeOut().remove();
+    });
+
+    $(document).on('click','#add-reminder',function() {
+        if($('.reminder-form').hasClass('is-active')) {
+            //$('.reminder-form').removeClass('is-active');
+            //$(this).text('Add Reminder');
+            window.location.href = window.location.href;
+        } else {
+            $('.reminder-form').addClass('is-active');
+            $(this).text('Cancel');
+        }
+    });
+
+    $(document).on('change','#input_1_1',function() {
+        $('#gform_1').attr('data-type',$('#input_1_1').val());
+    });
+
+    //show form on page load if there are errrors
+    if($('.gform_validation_errors').length) {
+        $('#add-reminder').trigger('click');
+    }
+
+    var sortList = '';
+    $(document).on('click','.reminder-category .edit',function() {
+        if($( '.reminder-category .reminders' ).hasClass('ui-sortable')) {
+            $('.is-editing').removeClass('is-editing');
+            $( '.ui-sortable' ).sortable('disable');
+            
+        }
+        var category = $(this).attr('data-category');
+        $( '.reminder-category.'+ category ).addClass('is-editing');
+        $( '.reminder-category.'+ category +' .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
+            sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
+          } 
+        });
+    });
+
+    $(document).on('click','.done-editing',function() {
+        console.log(sortList);
+        var category = $(this).attr('data-category');
+        $( '.reminder-category.'+ category +' .reminders' ).sortable('disable');
+        var save = [];
+        $( '.reminder-category.'+ category +' .reminder').each(function() {
+            if(!$(this).hasClass('to-be-removed')) {
+                save.push($(this).attr('data-id'));
+            }
+        });
+        $.ajax({
+            url: site_js.ajax_url,
+            type: 'post',
+            data: {
+                'action': 'update_reminder_categories',
+                'save' : save,
+                'category' : category
+            }, success: function( data ) {
+                $('.to-be-removed').fadeOut().remove();
+                $( '.reminder-category.'+ category ).removeClass('is-editing');
+                $( '.reminder-category').each(function() {
+                    if(!$(this).find('.reminder').length) {
+                        $(this).remove();
+                    }
+                });
+            }
+        });
+    });
+
+    $(document).on('click','.reminder .delete',function() {
+        $(this).parent().toggleClass('to-be-removed');
+    })
 
 })(jQuery); // Fully reference jQuery after this point.

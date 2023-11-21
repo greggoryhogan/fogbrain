@@ -1,4 +1,6 @@
-<?php get_header(); ?>
+<?php get_header(); 
+//get_user_meta($current_user->ID,'user_profile_page','35');
+?>
 <div class="container">
     <div class="row">
         <div class="col-9 col-md-9">
@@ -8,6 +10,30 @@
             <?php global $current_user; ?>
             <div class="form-errors"></div>
             <form id="profile-form">
+                <div class="profile-field avatar">
+                    <?php $user_avatar = get_user_meta($current_user->ID,'user_avatar',true); 
+                    if($user_avatar != '') {
+                        $profile_img	= @json_decode($user_avatar);
+                        $image = wp_get_attachment_image($profile_img->attachment_id,'thumbnail');
+                        $saved_profile_img_id = $profile_img->attachment_id;
+                        $has_image = true;
+                    } else {
+                        $has_image = false;
+                        $image = '';
+                        $saved_profile_img_id = '';
+                    }
+                    ?>
+                    
+                        <div id="profile_image"><?php echo $image; ?></div>
+                        <div class="flex-1">
+                            <label>Profile Photo <div class="delete-profile-photo <?php if($has_image) echo 'is-active'; ?>">Remove</div></label>
+                            <div class="desc">Displayed on your reminders page</div>
+                            <input type="file" value="<?php echo $current_user->display_name; ?>" id="avatar" data-cont="#profile_image" data-name="" />
+                            <input type="hidden" value="<?php echo $saved_profile_img_id; ?>" id="profile_image_id" />
+                        </div>
+                    
+                    <div class="action-error avatar-error"></div>
+                </div>
                 <div class="profile-field">
                     <label>Name</label>
                     <div class="desc">The display name for your page</div>
@@ -23,7 +49,7 @@
                     <?php $profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
                     $profile_page = get_post($profile_page_id); ?>
                     <label>Profile URL</label>
-                    <div class="desc"><?php echo get_bloginfo('url'); ?>/u/<span class="update-page-name-desc"><?php echo $profile_page->post_name; ?></span></div>
+                    <div class="desc"><span class="desktop-only"><?php echo get_bloginfo('url'); ?></span><span>/u/</span><span class="update-page-name-desc"><?php echo $profile_page->post_name; ?></span></div>
                     <div class="check-status is-success">
                         <input type="text" value="<?php echo $profile_page->post_name; ?>" id="profile-url" data-current-url="<?php echo $profile_page->post_name; ?>" />
                     </div>
@@ -31,7 +57,10 @@
                 </div>
                 <div class="profile-field">
                     <label>Share Code</label>
-                    <div class="desc">If you want to share your page, set the code here. <br>Keep in mind anyone with this code can access your reminders. <br>Leaving the code blank will keep your page private.<br><?php echo get_bloginfo('url'); ?>/u/<span class="update-page-name-desc"><?php echo $profile_page->post_name; ?></span>/share/<span class="update-share-name"><?php echo get_post_meta($profile_page_id,'share_code',true); ?></div>
+                    <div class="desc">If you want to make your page public and share your reminders, set the code here. 
+                        Anyone with this code can access your reminders. 
+                        <br><em>Leaving the code blank will keep your page private.</em>
+                        <br><span class="desktop-only"><?php echo get_bloginfo('url'); ?></span><span>/u/</span><span class="update-page-name-desc"><?php echo $profile_page->post_name; ?></span><span>/share/</span><span class="update-share-name"><?php echo get_post_meta($profile_page_id,'share_code',true); ?></div>
                     <input type="text" value="<?php echo get_post_meta($profile_page_id,'share_code',true) ?>" id="share-code" />
                     <div class="action-error share-code-error"></div>
                 </div>
