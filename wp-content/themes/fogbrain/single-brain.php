@@ -11,7 +11,7 @@
         <div class="row">
             <?php fog_error_notifications();  ?>
             <div class="col-12 col-md-9">
-                <?php $user_avatar = get_user_meta($current_user->ID,'user_avatar',true); 
+                <?php $user_avatar = get_user_meta($author_id,'user_avatar',true); 
                     if($user_avatar != '') {
                         $profile_img	= @json_decode($user_avatar);
                         $image = '<div id="profile_image">'.wp_get_attachment_image($profile_img->attachment_id,'thumbnail').'</div>';
@@ -46,7 +46,7 @@
                                 echo '<p>Add your reminder. You can type things like &ldquo;My birthday is November 25, 1985&rdquo;, &ldquo;I was married on 9/10/2021&rdquo; or &ldquo;My dog was born on 11/17/2017&rdquo;</p>';
                                 echo '<input id="prompt" type="text" placeholder="Add your reminder" />';
                                 echo '<input type="text" id="note" placeholder="An optional note about this reminder" />';
-                                echo '<label><input type="checkbox" id="public" checked" /> This reminder is public</label>';
+                                echo '<label><input type="checkbox" id="public" checked="checked" /> This reminder is public</label>';
                                 echo 'Public reminders will remain private if your page is not shared.<br>';
                                 echo '<input type="submit" value="Add Reminder" class="big-link has-cursor" />';
                             echo '</form>';
@@ -55,16 +55,9 @@
                     <div class="reminders">
                     <?php $reminders = maybe_unserialize(get_post_meta($post->ID,'user_reminders',true));
                     if($reminders) {
-                        //$prompt = 'My birthday is 11/25/1985';
-                        //$prompt = 'My girlfriend started work on September 25, 2021';
-                        //$prompt = "Matt's girlfriend started work on September 25, 2021";
-                        //$prompt = 'I got married on September 10 2021';
-                        //$prompt = 'I got my dog 11/17/2021';
-                        //$prompt = 'My dog was born 11/17/2021';
-                        //get_chat_gpt_response($prompt);
-                        //print_user_reminders($reminders, $author_id);
-                        //echo '<pre>'.print_r($reminders,true).'</pre>';
-                        process_gpt_reminders($reminders);
+                        $prompt = "I started working 1/3/2006";
+                        //echo '<pre>'.print_r(get_chat_gpt_response($prompt),true).'</pre>';
+                        process_gpt_reminders($reminders, $author_id);
                     } ?>
                     </div>
                     <?php 

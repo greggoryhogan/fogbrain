@@ -21,7 +21,8 @@ function register_bhfe_scripts() {
 		wp_enqueue_script('input-mask');
 	}*/
 	wp_enqueue_script( 'jquery-ui-sortable' );
-	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable'),'',true);
+	wp_enqueue_script('touchpunch', $bhfe_dir.'/js/jquery.ui.touch-punch.min.js',array(),'',true);
+	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable','touchpunch'),'',true);
 	global $fogbrain_user_id, $current_user;
 	wp_localize_script( 'fogbrain-main', 'site_js', array(
 		'ajax_url' => admin_url( 'admin-ajax.php' ),
@@ -245,7 +246,9 @@ add_filter( 'auth_cookie_expiration', 'fog_auth_cookie_expiration_30_days', 10, 
 function fog_auth_cookie_expiration_30_days( $seconds, $user_id, $remember_me ) {
     if ( $remember_me ) {
         return 12 * MONTH_IN_SECONDS;
-    }
+    } else {
+		return 31556926; //1 year in seconds
+	}
     return $seconds;
 }
 
@@ -283,7 +286,7 @@ function send_login_code_callback() {
 			$message .= '<h2 style="text-align: center; letter-spacing: 8px;">'.$random_number.'</h2>';
 			$message .= '<p style="text-align: center;">This code is valid for 10 minutes. Please go back to the Fog Brain login page and enter your code.</p>';
 			$message .= '<p style="text-align: center;">You can also click the link below to log in:<br><a href="'.get_bloginfo('url').'/login/?login-code='.$random_number.'">'.get_bloginfo('url').'/login/?login-code='.$random_number.'</a></p>';
-			$message .= '<p style="text-align: center;">If you did not request this login code, you can ignore this email. Your page is only available through your email account.</p>';
+			$message .= '<p style="text-align: center;">If you did not request this login code, you can ignore this email. Your login is only available through your email account.</p>';
 			$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
 			wp_mail($email,'Your Fog Brain login code',$message);
 			$new_transient = true;
@@ -1018,23 +1021,47 @@ function update_reminder_categories_callback() {
 
 
 function get_chat_gpt_response($prompt) {
-	set_time_limit(0);
+	//set_time_limit(0);
 	$url = 'https://api.openai.com/v1/chat/completions';
+
+
+	$prompt_instructions = "Analyze the user input ## {$prompt} ##.
+	
+	Determine if it contains information about a birthday or birth and assign it to the bool variable 'is_birthday'.
+
+	Create the variable 'about_me'. Assign 'about_me' true if the user input is about the user or contains 'I'. 'about_me' is false otherwise.
+
+	Create the variable 'rephrase'. Reword the user input, removing the date. If 'about_me' false true use the 'present perfect continuous' tense, otherwise use 'present perfect continuous'. Assign it to the variable 'rephrase'. Assign the tense used to the variable 'tense'.
+
+	Return as a JSON object in this format:
+	{
+		'is_birthday' : is_birthday,
+		'about_me' : 'about_me',
+		'primary_subject' : {extracted_primary_subject},
+		'primary_action' : {extracted_primary_action},
+		'date' : '{extracted_date}',
+		'rephrased' : rephrase,
+		'tense' : tense
+	}";
+	
 	$data = array(
 		'model' => 'gpt-3.5-turbo', //gpt-4, gpt-3.5-turbo
 		'temperature' => (int) '.1',
 		'messages' => array(
 			array(
 				'role' => 'system',
-				'content' => 'You are a computer designed to extract information from a string. You have no emotion. Do not provide extra response other thasn the array.'
+				'content' => 'You are a computer specializing in the english language, designed to extract information from a string. You have no emotion. Format the answer as a JSON object'
 			),
 			array(
 				'role' => 'user',
-				'content' => "Extract information from the following prompt - $prompt . Return an array. Key 'date' is the date. Key 'isbirthday' is a bool variable whethis this prompt is related to a birthday, born day, or date of birth. Key 'aboutme' is a bool variable, true when the prompt is information about me and false when the information is about someone else. Key 'subject' is who I am talking about in relation to me, from your perspective. Key 'predicate' is the subject of my prompt in relation to me, from your perspective."
+				'content' => $prompt_instructions
 			),
 			
 		)
 	);
+
+	//"Extract information from the following prompt - $prompt . Return an array. Key 'date' is the date. Key 'is_birthday' is a bool variable whethis this prompt is related to a birthday, born day, or date of birth. Key 'about_me' is a bool variable, true when the prompt is information about me and false when the information is about someone else. Key 'primary_subject' is who I am talking about in relation to me, from your perspective. Key 'primary_action' is the primary_subject of my prompt in relation to me, from your perspective."
+
 	//$query_url = $url.'?'.http_build_query($data);
 	$args = array(
 		'headers'     => array(
@@ -1042,43 +1069,52 @@ function get_chat_gpt_response($prompt) {
 			'Authorization' => 'Bearer ' . FOG_CHATGPT_KEY,
 		),
 		'timeout'     => '30',
+		'compress' => true,
 		'body' => json_encode($data),
 	); 
-	$result = wp_remote_post( $url, $args );
+
+	//rety until we get a response
+	while(1) {
+		$result = wp_remote_post( $url, $args );
+		if(!is_wp_error( $result )) {
+			if (!empty($result) && $result["response"]["code"] == 200) {
+				break;
+			}
+		} 
+	}
+	
+	
 	if(!is_wp_error( $result )) {
+		//print_r( $result );
 		$jsonResponse = json_decode(wp_remote_retrieve_body($result), true);
-		$generatedText = '';
+		//return $jsonResponse;
 		//echo '<pre>';
 		if (isset($jsonResponse['choices']) && count($jsonResponse['choices']) > 0) {
-			$choices = $jsonResponse['choices'][0];
-			$message = json_decode($choices['message']['content']);
-			if(!empty($message)) {
+			$choices = $jsonResponse['choices'][0]['message']['content'];
+			if(!empty($choices)) {
 				return array(
 					'error' => 0,
-					'message' => $message
+					'message' => $choices
 				);
 			} else {
-				//print_r($jsonResponse['choices']);
 				return array(
 					'error' => 1,
-					'message' => array()
+					'message' => wp_remote_retrieve_body($result)
 				);
 			}
-			/*$prompt = $message[0]->phrase;
-			$date = $message[0]->date;
-			$isbirthday = $message[0]->isbirthday;
-			echo $prompt .' <br>';
-			echo $date .'<br>';
-			echo $isbirthday;*/
-			//print_r($date);
-			//print_r($message);
 		} else {
-			//echo 'not choices';
-			//print_r($jsonResponse);
+			return array(
+				'error' => 1,
+				'message' => wp_remote_retrieve_body($result)
+			);
 		}
 		//echo '</pre>';
 		
 	} else {
+		return array(
+			'error' => 1,
+			'message' => array($result->get_error_message())
+		);
 		//echo $result->get_error_message();
 	}
 }
@@ -1095,31 +1131,41 @@ function add_gpt_reminder_callback() {
 	if($response['error'] == 1) {
 		echo json_encode(
 			array(
-				'error' => 1
+				'error' => 1,
+				'message' => $response['message']
 			)
 		);
 		wp_die();
 	} else {
-		$message = $response['message'];
-		
+		$message = json_decode($response['message'],true);
 		$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
 		$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'user_reminders',true));
 		if(!is_array($saved_reminders)) {
 			$saved_reminders = array();
 		}
 		$index = count($saved_reminders);
+		$date = $message['date'];
+		$is_birthday = $message['is_birthday'];
+		$about_me = $message['about_me'];
+		$primary_subject = $message['primary_subject'];
+		$primary_action = $message['primary_action'];
+		$rephrased = $message['rephrased'];
+		$tense = $message['tense'];
+
 		$saved_reminders[] = array(
-			'date' => $message->date,
-			'isbirthday' => $message->isbirthday,
-			'aboutme' => $message->aboutme,
-			'subject' => $message->subject,
-			'predicate' => $message->predicate,
+			'date' => $date,
+			'is_birthday' => $is_birthday,
+			'about_me' => $about_me,
+			'primary_subject' => $primary_subject,
+			'primary_action' => $primary_action,
+			'rephrased' => $rephrased,
+			'tense' => $tense,
 			'note' => $note,
 			'public' => $public,
 		);
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
 		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
-		$reminder .= process_gpt_reminder($message->date, $message->isbirthday, $message->aboutme, "$message->subject", "$message->predicate", "$note");
+		$reminder .= process_gpt_reminder($date, $is_birthday, $about_me, "$primary_subject", "$primary_action", "$rephrased", "$tense", "$note");
 		$reminder .= '</div><div class="delete"></div></div>';
 		echo json_encode(
 			array(
@@ -1133,45 +1179,46 @@ function add_gpt_reminder_callback() {
 	wp_die();
 }
 
-function process_gpt_reminders($reminders) {
+function process_gpt_reminders($reminders, $author_id = null) {
 	global $current_user;
 	$user_timezone = get_user_meta($current_user->ID,'timezone',true);
 	if($user_timezone == '') {
 		$user_timezone = 'America/New_York';
 	}
 	
-	foreach($reminders as $index => $reminder) {
-		//print_r($reminder);
-		if(isset($reminder['date'])) {
-			$date = $reminder['date'];
-			$isbirthday = $reminder['isbirthday'] ?? false;
-			$aboutme = $reminder['aboutme'] ?? false;
-			$subject = $reminder['subject'];
-			$predicate = $reminder['predicate'];
-			$note = $reminder['note'];
-			//echo '<pre>'.print_r($reminder,true).'</pre>';
-			
-			echo '<div class="reminder" data-id="'.$index.'">';
-				echo '<div class="handle"></div>';
-				echo '<div class="reminder-content">';
-					echo process_gpt_reminder($date, $isbirthday, $aboutme, $subject, $predicate, $note, $user_timezone);
-				echo '</div>';
-				echo '<div class="delete"></div>';
-			echo '</div>';
-		
+	$is_my_page = true;
+	if($author_id != null) {
+		if($current_user->ID != $author_id) {
+			$is_my_page = false;
 		}
-		/*
-		$time_calulation = DateTime::createFromFormat('Y-m-d', $reminder['date'], $tz)->diff(new DateTime('now', $tz));
-								if($time_calulation->invert == 1) {
-									//past
-									$time = $time_calulation->days;
-									$future = true;
-								}
-								*/
+	}
+	foreach($reminders as $index => $reminder) {
+		if($reminder['public'] == 'true' || $is_my_page) {
+			//print_r($reminder);
+			if(isset($reminder['date'])) {
+				$date = $reminder['date'];
+				$is_birthday = $reminder['is_birthday'] ?? false;
+				$about_me = $reminder['about_me'] ?? false;
+				$primary_subject = $reminder['primary_subject'];
+				$primary_action = $reminder['primary_action'];
+				$rephrased = $reminder['rephrased'] ?? '';
+				$tense = $reminder['tense'] ?? '';
+				$note = $reminder['note'];
+				
+				echo '<div class="reminder" data-id="'.$index.'">';
+					echo '<div class="handle"></div>';
+					echo '<div class="reminder-content">';
+						echo process_gpt_reminder($date, $is_birthday, $about_me, $primary_subject, $primary_action, $rephrased, $tense, $note, $user_timezone);
+					echo '</div>';
+					echo '<div class="delete"></div>';
+				echo '</div>';
+			
+			}
+		}
 	}
 }
 
-function process_gpt_reminder($date, $isbirthday, $aboutme, $subject, $predicate, $note = false, $timezone = false) {
+function process_gpt_reminder($date, $is_birthday, $about_me, $primary_subject, $primary_action, $rephrased, $tense, $note = false, $timezone = false) {
 	$return = '';
 	if($timezone === false) {
 		$timezone = 'America/New_York';
@@ -1179,30 +1226,57 @@ function process_gpt_reminder($date, $isbirthday, $aboutme, $subject, $predicate
 	$tz  = new DateTimeZone($timezone);
 	$normalized_date = date('Y-m-d', strtotime($date));
 	$time_calulation = DateTime::createFromFormat('Y-m-d', $normalized_date, $tz)->diff(new DateTime('now', $tz));
-	if($isbirthday) {
-		if($time_calulation->y == 0) {
-			if($time_calulation->m  > 0) {
-				if($time_calulation->m == 1) {
-					$time = "<span>$time_calulation->m month old</span>.";
-				} else {
-					$time = "<span>$time_calulation->m months old</span>.";
-				}
+	
+	if($time_calulation->y == 0) {
+		if($time_calulation->m  > 0) {
+			if($time_calulation->m == 1) {
+				$time = "$time_calulation->m month";
 			} else {
-				$time = "<span>$time_calulation->d days old</span>.";
+				$time = "$time_calulation->m months";
 			}
 		} else {
-			$time = "<span>$time_calulation->y years old</span>.";
+			$time = "$time_calulation->d days";
 		}
+	} else {
+		$time = "$time_calulation->y years";
+	}
+	if($is_birthday) {
 		$ignore_me = array('you','I','myself');
-		if($aboutme && in_array($subject,$ignore_me)) {
-			$return .= "You are $time";
+		if($about_me && in_array($primary_subject,$ignore_me)) {
+			$return .= "I am <span>$time old</span>";
 		} else {
-			$return .= "$subject is $time";
+			$return .= "$primary_subject is <span>$time old</span>";
 		}
+	} else {
+		$phrase = rtrim($rephrased, '.');
+		$return .= "$phrase <span>$time";
+		if($tense == 'present perfect') {
+			$return .= " ago";
+		}
+		$return .= "</span>";
 	}
 	$return .= '<div class="detail">';
+		$subject = str_replace(',','',$primary_subject);
+		if($about_me) {
+			if($is_birthday) {
+				$subject = 'My';
+			} else {
+				$subject = 'I';
+			}
+		}
+		$return .= $subject;
+		if($is_birthday && !$about_me) {
+			$return .= "&rsquo;s";
+		}
+		if($is_birthday) {
+			$return .= " birthday is";
+		} else {
+			$return .= " $primary_action";
+		}
+		$return .= " ";
+		$return .= date('F jS, Y', strtotime($date));
 		if($note !== false) {
-			$return .= $note;
+			$return .= "<br>$note";
 		}
 	$return .= '</div>';
 	return $return;

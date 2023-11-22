@@ -403,11 +403,7 @@
             }, success: function( data ) {
                 $('.to-be-removed').fadeOut().remove();
                 $( '.reminder-summary' ).removeClass('is-editing');
-                $( '.reminder-summary').each(function() {
-                    if(!$(this).find('.reminder').length) {
-                        $(this).remove();
-                    }
-                });
+                
             }
         });
     });
@@ -441,7 +437,10 @@
                     response = JSON.parse(data);
                     $('#reminder-form').removeClass('is-loading')
                     if(response.error == 1) {
+                        console.log(response);
+                        $('#reminder-form').prepend('<div class="error-notice is-active">'+response.message+'</div>');
                         $('#reminder-form').prepend('<div class="error-notice is-active">There was an error adding your reminder. Please try again.</div>');
+                        
                     } else {
                         $('.reminder-form').removeClass('is-active');
                         $('#add-reminder').text('Add Reminder');
