@@ -669,6 +669,8 @@ function get_chat_gpt_response($prompt) {
 
 	$prompt_instructions = "Analyze the user input ## {$prompt} ##.
 
+	Extract the date, if any, from the user input and assign it to the variable 'date.'
+
 	Determine the tense of the user input and assign it to the variable 'tense'.
 
 	Determine if user input contains information about a birthday and assign it to the bool variable 'is_birthday'.
@@ -677,6 +679,8 @@ function get_chat_gpt_response($prompt) {
 
 	Find the complement (Predicate Nominative) in the user input and assign it to the variable 'complement'.
 
+	If 'complement' is empty, find a location mentioned in the user input and assign it to the variable 'complement'.
+
 	Remove any mention of a date in the user input and assign it to the variable 'phrase'.
 
 	Return as a JSON object in this format:
@@ -684,7 +688,7 @@ function get_chat_gpt_response($prompt) {
 		'is_birthday' : is_birthday,
 		'primary_subject' : {extracted_complete_subject},
 		'about_me' : {contains_singular_first_person_pronoun},
-		'date' : '{extracted_date_information}',
+		'date' : date,
 		'phrase' : phrase,
 		'tense': tense,
 		'complement' : complement
@@ -864,23 +868,31 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	foreach($reminders as $index => $reminder) {
 		if($reminder['public'] == 'true' || $is_my_page) {
 			//print_r($reminder);
-			if(isset($reminder['date'])) {
-				if($reminder['tag'] != '') {
-					$tag = $reminder['tag'];
-				} else {
-					$tag = '';
-				}
-				$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
-					$reminders_html .= '<div class="handle"></div>';
-					$reminders_html .= '<div class="reminder-content">';
-						$reminders_html .= process_gpt_reminder($reminder, $user_timezone);
-					$reminders_html .= '</div>';
-					$reminders_html .= '<div class="delete"></div>';
-				$reminders_html .= '</div>';
+			if($reminder['tag'] != '') {
+				$tag = $reminder['tag'];
+			} else {
+				$tag = '';
 			}
+			$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
+				$reminders_html .= '<div class="handle"></div>';
+				$reminders_html .= '<div class="reminder-content">';
+					$reminders_html .= process_gpt_reminder($reminder, $user_timezone);
+				$reminders_html .= '</div>';
+				$reminders_html .= '<div class="delete"></div>';
+			$reminders_html .= '</div>';
 		}
 	}
 	return $reminders_html;
+}
+
+function validDate($date, $format = 'Y-m-d') {
+	if($date == '') {
+		return false;
+	}
+	$normalized_date = date('Y-m-d', strtotime($date));
+    $d = DateTime::createFromFormat($format, $normalized_date);
+    // The Y ( 4 digits year ) returns TRUE for any integer with any number of digits so changing the comparison from == to === fixes the issue.
+	return $d && $d->format($format) === $normalized_date;
 }
 
 function process_gpt_reminder($reminder, $timezone = false) {
@@ -899,12 +911,14 @@ function process_gpt_reminder($reminder, $timezone = false) {
 		
 	$return .= '</div>';
 	$return .= '<div class="reminder-data">';
-		if($reminder['date'] != '') {
+		$reminder_date = str_replace(',','',$reminder['date']);
+		if(validDate($reminder_date)) {
+			//$return .= '<pre>'.print_r($reminder,true).'</pre>';
 			if($timezone === false) {
 				$timezone = 'America/New_York';
 			}
 			$tz  = new DateTimeZone($timezone);
-			$normalized_date = date('Y-m-d', strtotime($reminder['date']));
+			$normalized_date = date('Y-m-d', strtotime($reminder_date));
 			$time_calulation = DateTime::createFromFormat('Y-m-d', $normalized_date, $tz)->diff(new DateTime('now', $tz));
 			
 			if($time_calulation->y == 0) {
@@ -933,10 +947,14 @@ function process_gpt_reminder($reminder, $timezone = false) {
 				}
 			} else {
 				$phrase = rtrim($reminder['phrase'], '.');
+				if($reminder['tense'] == 'present perfect') {
+					$phrase = rtrim($phrase, 'since');	
+				}
 				$return .= "$phrase";
 				if(strpos($phrase,',')) {
 					$return .= ',';
 				}
+				
 				if($reminder['tense'] == 'future') {
 					$return .= " in";
 				}
@@ -959,7 +977,22 @@ function process_gpt_reminder($reminder, $timezone = false) {
 					$return .= " birthday is ";
 				}
 				
-				$return .= date('F jS, Y', strtotime($reminder['date']));
+				/*$parsed = date_parse($reminder['date']);
+				$return .= print_r($parsed,true);
+				if($parsed['day'] != '') {
+					$return .= date('F jS, Y', strtotime($reminder['date']));
+				} else {
+					$return .= date('F, Y', strtotime($reminder['date']));
+				}*/
+				// Check if the input string contains a numeric value for the day
+				if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $reminder_date, $matches)) {
+					$return .= date('F jS, Y', strtotime($reminder_date));
+				} else {
+					$return .= date('F, Y', strtotime($reminder_date));
+				}
+
+
+				
 				if($reminder['note'] !== '') {
 					$note = $reminder['note'];
 					$placeholder = '';
@@ -970,12 +1003,15 @@ function process_gpt_reminder($reminder, $timezone = false) {
 				$return .= '<div><input class="note '.$placeholder.'" placeholder="note" value="'.$note.'" /></div>';
 			$return .= '</div>';
 		} else {
+			//$return .= '<pre>'.print_r($reminder,true).'</pre>';
 			if(isset($reminder['complement'])) {
 				$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $reminder['phrase']);
 			} else {
 				$phrase = $reminder['phrase'];
 			}
-			
+			if(str_ends_with($phrase,'.')) {
+				$phrase = rtrim($phrase, '.');
+			}
 			$return .= "$phrase";
 			$return .= '<div class="detail">';
 				if($reminder['note'] !== '') {
