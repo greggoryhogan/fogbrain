@@ -44,6 +44,16 @@
         return decodeURIComponent(results[1].replace(/\+/g, " "));
     }  
 
+    function updateTagSize() {
+        $('.tag').each(function() {
+            if($(this).val().length > 5) {
+                $(this).attr('size',$(this).val().length);
+            } else {
+                $(this).attr('size',5);
+            }
+        });
+    }
+    updateTagSize();
     
     $(document).on('submit','#login',function(e) {
         e.preventDefault();
@@ -379,6 +389,7 @@
             
         }
         var category = $(this).attr('data-category');*/
+        $('.hidden-reminder').removeClass('hidden-reminder');
         $( '.reminder-summary' ).addClass('is-editing');
         $( '.reminder-summary .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
             sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
@@ -391,7 +402,11 @@
         var save = [];
         $( '.reminder-summary .reminder').each(function() {
             if(!$(this).hasClass('to-be-removed')) {
-                save.push($(this).attr('data-id'));
+                save.push({
+                    id : $(this).attr('data-id'),
+                    tag : $(this).find('.tag').val(),
+                    note : $(this).find('.note').val()
+                });
             }
         });
         $.ajax({
@@ -401,8 +416,12 @@
                 'action': 'update_reminder_categories',
                 'save' : save,
             }, success: function( data ) {
-                $('.to-be-removed').fadeOut().remove();
+                response = JSON.parse(data);
+                $('.reminders').html(response.reminders);
+                updateTagSize();
                 $( '.reminder-summary' ).removeClass('is-editing');
+
+                //process_gpt_reminders
                 
             }
         });
@@ -419,6 +438,7 @@
         $('#reminder-form .error-notice').remove();
         var prompt = $('#prompt').val();
         var note = $('#note').val();
+        var tag = $('#tag').val();
         var public = $("#public").is(':checked');
         if(prompt == '') {
             $('#reminder-form').prepend('<div class="error-notice is-active">Please provide a reminder.</div>');
@@ -432,6 +452,7 @@
                     'prompt' : prompt,
                     'note' : note,
                     'public' : public,
+                    'tag' : tag
                     
                 }, success: function( data ) {
                     response = JSON.parse(data);
@@ -453,6 +474,53 @@
             });
         }
        
+    });
+
+    $(document).on('click','.tag.placeholder',function() {
+        $(this).find('input').val('');
+    });
+
+    
+    $('.note').each(function() {
+        if($(this).val().length > 20) {
+            $(this).attr('size',$(this).val().length);
+        } else {
+            $(this).attr('size',20);
+        }
+    });
+
+    $(document).on('keyup','.tag',function() {
+        if($(this).val().length > 5) {
+            $(this).attr('size',$(this).val().length);
+        } else {
+            $(this).attr('size',5);
+        }
+        if($(this).val() == '') {
+            $(this).addClass('placeholder');
+        } else {
+            $(this).removeClass('placeholder');
+        }
+    });
+
+    $(document).on('keyup','.note',function() {
+        if($(this).val().length > 20) {
+            $(this).attr('size',$(this).val().length);
+        } else {
+            $(this).attr('size',20);
+        }
+    });
+
+    $(document).on('click','.tag-btn', function() {
+        var tag = $(this).attr('data-tag');
+        if(tag == 'All') {
+            $('.hidden-reminder').removeClass('hidden-reminder');
+            $('.is-active').removeClass('is-active');
+        } else {
+            $('.is-active').removeClass('is-active');
+            $(this).addClass('is-active');
+            $('.reminder').not('[data-tag="'+tag+'"]').addClass('hidden-reminder');
+            $('.reminder[data-tag="'+tag+'"]').removeClass('hidden-reminder');
+        }
     });
 
 })(jQuery); // Fully reference jQuery after this point.

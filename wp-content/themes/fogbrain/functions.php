@@ -632,389 +632,31 @@ function fog_error_notifications() {
 	} 
 }
 
-
-add_filter( 'gform_pre_render_1', 'populate_events' ); //WI Special Order Form
-add_action( 'gform_admin_pre_render_1', 'populate_events' );
-function populate_events( $form ) {
-	//wp_enqueue_script('firearm-dropdown'); //We not longer do this
-    foreach ( $form['fields'] as &$field ) {
-        if ( $field->type != 'select' || strpos( $field->cssClass, 'event-types' ) === false ) {
-            continue;
-        }
-		$my = false;
-		if(strpos( $field->cssClass, 'primary' ) !== false) {
-			$my = true;
-		}
-        $field->placeholder = 'specify an event';
-		$field->choices = get_event_choices($my);
-	}
-    return $form;
-}
-
-add_filter( 'gform_pre_render_1', 'populate_relationships' ); //WI Special Order Form
-add_action( 'gform_admin_pre_render_1', 'populate_relationships' );
-function populate_relationships( $form ) {
-	//wp_enqueue_script('firearm-dropdown'); //We not longer do this
-    foreach ( $form['fields'] as &$field ) {
-        if ( $field->type != 'select' || strpos( $field->cssClass, 'relationship-types' ) === false ) {
-            continue;
-        }
-        $field->placeholder = 'specify the relationship';
-		$my = false;
-		if(strpos( $field->cssClass, 'primary' ) !== false) {
-			$my = true;
-		}
-		$field->choices = get_relationship_choices($my);
-	}
-    return $form;
-}
-/**
- * Function to get rifle choices for dropdown, pulled from frontend and wp-admin
- */
-function get_event_choices($my) {
-	$event_choices = array();
-	if($my) {
-		$event_choices[] = array( 'text' => 'My birthday', 'value' => 'birthday');
-		$event_choices[] = array( 'text' => 'My wedding', 'value' => 'wedding');
-		$event_choices[] = array( 'text' => 'Other', 'value' => 'other');
-		/*$event_choices[] = array( 'text' => 'My high school graduation', 'value' => 'hs-graduation');
-		$event_choices[] = array( 'text' => 'My college graduation', 'value' => 'college-graduation');*/
-	} else {
-		$event_choices[] = array( 'text' => 'birthday', 'value' => 'birthday');
-		$event_choices[] = array( 'text' => 'wedding', 'value' => 'wedding');
-		$event_choices[] = array( 'text' => 'other', 'value' => 'other');
-	}
-	return $event_choices;
-}
-
-function get_relationship_choices($my) {
-	$my_text = '';
-	if($my) {
-		$my_text = 'My ';
-	}
-	$relationship_choices = array();
-	$relationship_choices[] = array( 'text' => $my_text.'wife', 'value' => 'wife');
-	$relationship_choices[] = array( 'text' => $my_text.'husband', 'value' => 'husband');
-	$relationship_choices[] = array( 'text' => $my_text.'spouse', 'value' => 'spouse');
-	$relationship_choices[] = array( 'text' => $my_text.'friend', 'value' => 'friend');
-	$relationship_choices[] = array( 'text' => $my_text.'girlfriend', 'value' => 'girlfriend');
-	$relationship_choices[] = array( 'text' => $my_text.'boyfriend', 'value' => 'boyfriend');
-	$relationship_choices[] = array( 'text' => $my_text.'mother', 'value' => 'mother');
-	$relationship_choices[] = array( 'text' => $my_text.'father', 'value' => 'father');
-	$relationship_choices[] = array( 'text' => $my_text.'parent', 'value' => 'parent');
-	$relationship_choices[] = array( 'text' => $my_text.'grandmother', 'value' => 'grandmother');
-	$relationship_choices[] = array( 'text' => $my_text.'grandfather', 'value' => 'grandfather');
-	$relationship_choices[] = array( 'text' => $my_text.'grandparent', 'value' => 'grandparent');
-	$relationship_choices[] = array( 'text' => $my_text.'nephew', 'value' => 'nephew');
-	$relationship_choices[] = array( 'text' => $my_text.'niece', 'value' => 'niece');
-	$relationship_choices[] = array( 'text' => $my_text.'cousin', 'value' => 'cousin');
-	$relationship_choices[] = array( 'text' => $my_text.'aunt', 'value' => 'aunt');
-	$relationship_choices[] = array( 'text' => $my_text.'uncle', 'value' => 'uncle');
-	$relationship_choices[] = array( 'text' => $my_text.'dog', 'value' => 'dog');
-	$relationship_choices[] = array( 'text' => $my_text.'cat', 'value' => 'cat');
-	$relationship_choices[] = array( 'text' => $my_text.'pet', 'value' => 'pet');
-	return $relationship_choices;
-}
-
-/** create reminder and delete entry */
-add_action( 'gform_after_submission_1', 'create_reminder', 10, 2 );
-function create_reminder( $entry, $form ) {
-	global $current_user;
-	$entry_id = $entry['id'];
-	$relationship = $entry['1'];
-	if($relationship == 'myself') {
-		$event = $entry['4']; // or 19
-	} else {
-		$event = $entry['19']; // or 19
-	}
-	$date = $entry['10'];
-	$notes = $entry['11'];
-	$primary_relation = $entry['12'] ?? '';
-	$primary_relation_name = $entry['13'] ?? '';
-	$secondary_relation = $entry['15'] ?? '';
-	$secondary_relation_name = $entry['17'] ?? '';
-	$other = $entry['20'] ?? '';
-	$iswas = $entry['21'] ?? '';
-	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
-	$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'reminders',true));
-	if(!is_array($saved_reminders)) {
-		$saved_reminders = array();
-	}
-	if(!isset($saved_reminders["{$relationship}"])) {
-		$saved_reminders["{$relationship}"] = array();
-	}
-	if(!in_array($entry['id'],$saved_reminders["{$relationship}"])) {
-		//new reminders
-		$saved_reminders["{$relationship}"]["{$entry_id}"] = array(
-			'event' => $event, 
-			'date' => $date, 
-			'iswas' => $iswas, 
-			'primary_relation' => $primary_relation,  
-			'primary_relation_name' => $primary_relation_name, 
-			'secondary_relation' => $secondary_relation,  
-			'secondary_relation_name' => $secondary_relation_name, 
-			'other' => $other, 
-			'note' => $notes
-		);
-	} else {
-		//update the reminder
-	}
-	update_post_meta($profile_page_id,'reminders',$saved_reminders);
-	//delete entry
-    GFAPI::delete_entry( $entry['id'] );
-	
-}
-
-function print_user_reminders($reminders, $author_id) {
-	global $current_user;
-	$user_timezone = get_user_meta($current_user->ID,'timezone',true);
-	if($user_timezone == '') {
-		$user_timezone = 'America/New_York';
-	}
-	$tz  = new DateTimeZone($user_timezone);
-	foreach($reminders as $category => $reminder_items) {
-		if(!empty($reminder_items)) {
-			echo '<div class="reminder-category '.$category.'">';
-				echo '<h2>';
-				if($category == 'myself') {
-					echo 'About Me';
-				} else if($category == 'primary') {
-					echo '<span>Primary<span class="desktop-only"> Relationships</span></span>';
-				} else if($category == 'secondary') {
-					echo '<span>Secondary<span class="desktop-only"> Relationships</span></span>';
-				}
-				if($current_user->ID == $author_id) {
-					echo '<div class="edit" data-category="'.$category.'"></div>';
-				}
-				echo '</h2>';
-				echo '<div class="reminders">';
-					foreach($reminder_items as $index => $reminder) {
-						echo '<div class="reminder" data-id="'.$index.'">';
-							echo '<div class="handle"></div>';
-							echo '<div class="reminder-content">';
-								$time_calulation = DateTime::createFromFormat('Y-m-d', $reminder['date'], $tz)->diff(new DateTime('now', $tz));
-								if($time_calulation->invert == 1) {
-									//past
-									$time = $time_calulation->days;
-									$future = true;
-								} else {
-									$time = $time_calulation->y;
-									$future = false;
-								}
-								//$time = DateTime::createFromFormat('Y-m-d', $reminder['date'], $tz)->diff(new DateTime('now', $tz))->y;
-								switch ($reminder['event']) {
-									case 'birthday':
-										if($category == 'myself') {
-											echo "I am ";
-										} else if ($category == 'primary') {
-											if($reminder['primary_relation_name'] != '') {
-												echo $reminder['primary_relation_name'] .' ';
-												if($reminder['iswas'] != 'n/a') {
-													echo $reminder['iswas'].' ';
-												}
-											}
-										} else if ($category == 'secondary') {
-											if($reminder['primary_relation_name'] != '') {
-												echo $reminder['primary_relation_name'];
-												echo  '&rsquo;s ';
-											}
-											echo $reminder['secondary_relation'].', ';
-											echo $reminder['secondary_relation_name'] .', ';
-											if($reminder['iswas'] != 'n/a') {
-												echo $reminder['iswas'].' ';
-											}
-										}
-										if($reminder['iswas'] == 'was') {
-											echo ' born ';
-											if($time == 0) {
-												if($time_calulation->m > 0) {
-													if($time_calulation->m == 1) {
-														echo "<span>$time_calulation->m month ago</span>.";
-													} else {
-														echo "<span>$time_calulation->m months ago</span>.";
-													}
-												} else {
-													echo "<span>$test->d days ago</span>.";
-												}
-											} else {
-												echo "<span>$time years ago</span>.";
-											}
-										} else {
-											if($time == 0) {
-												if($time_calulation->m > 0) {
-													if($time_calulation->m == 1) {
-														echo "<span>$time_calulation->m month old</span>.";
-													} else {
-														echo "<span>$time_calulation->m months old</span>.";
-													}
-												} else {
-													echo "<span>$test->d days old</span>.";
-												}
-											} else {
-												echo "<span>$time years old</span>.";
-											}
-										}
-										break;
-									case 'anniversary':
-										if($category == 'myself') {
-											echo "I&rsquo;ve been married for ";
-										} else {
-											echo "They&rsquo;ve been married for ";
-										}
-										echo "<span>$time years</span>.";
-										break;
-									case 'wedding':
-										if($future) {
-											if($category == 'myself') {
-												echo "I will ";
-											} else if ($category == 'primary') {
-												echo $reminder['primary_relation_name'] .' will ';
-											} else if ($category == 'secondary') {
-												echo $reminder['primary_relation_name'].'&rsquo; ';
-												echo $reminder['secondary_relation'].', ';
-												echo $reminder['secondary_relation_name'] .', will ';
-											}
-											echo " be married in <span>$time days</span>.";
-											
-										} else {
-											if($category == 'myself') {
-												echo "I&rsquo;ve been married for ";
-											} else if ($category == 'primary') {
-												echo $reminder['primary_relation_name'] .' has been married for ';
-											} else if ($category == 'secondary') {
-												echo $reminder['primary_relation_name'] .'&rsquo; ';
-												echo $reminder['secondary_relation'].', ';
-												echo $reminder['secondary_relation_name'] .', has been married for ';
-											}
-											
-											if($time == 0) {
-												if($time_calulation->m > 0) {
-													if($time_calulation->m == 1) {
-														echo "<span>$time_calulation->m month</span>.";
-													} else {
-														echo "<span>$time_calulation->m months</span>.";
-													}
-												} else {
-													echo "<span>$test->d days</span>.";
-												}
-											} else {
-												echo "<span>$time years</span>.";
-											}
-											
-										}
-										break;
-									default:
-										if($category == 'myself') {
-											//echo "I am ";
-										} else if ($category == 'primary') {
-											if($reminder['primary_relation_name'] != '') {
-												echo $reminder['primary_relation_name'] .'&rsquo;s ';
-											}
-										} else if ($category == 'secondary') {
-											if($reminder['primary_relation_name'] != '') {
-												echo $reminder['primary_relation_name'];
-												echo  '&rsquo;s ';
-											}
-											echo $reminder['secondary_relation'].', ';
-											echo $reminder['secondary_relation_name'] .', ';
-											if($reminder['iswas'] != 'n/a') {
-												echo $reminder['iswas'];
-											}
-										}
-										if($future) {
-											echo $reminder['other'] ." is in <span>$time days</span>.";
-										} else {
-											echo $reminder['other'] .' ';
-											if($time == 0) {
-												if($time_calulation->m > 0) {
-													if($time_calulation->m == 1) {
-														echo "<span>$time_calulation->m month ago</span>.";
-													} else {
-														echo "<span>$time_calulation->m months ago</span>.";
-													}
-												} else {
-													echo "<span>$time_calulation->d days ago</span>.";
-												}
-											} else {
-												echo "<span>$time years ago</span>.";
-											}
-											
-										}
-								}
-								echo '<div class="detail">';
-									if($category == 'myself') {
-										if($reminder['event'] != 'other') {
-											$person = 'My ';
-										} else {
-											$person = '';
-										}
-									} else {
-										$person = 'Their ';
-									}
-									if($reminder['event'] != 'other') {
-										echo $person.$reminder['event'];
-										if($reminder['iswas'] != 'n/a') {
-											echo ' '. $reminder['iswas'].' ';
-										}
-										echo date('M d, Y', strtotime($reminder['date']));
-									} else {
-										if($future) {
-											echo $person.$reminder['other'];
-											if($reminder['iswas'] != 'n/a') {
-												echo ' '.$reminder['iswas'].' ';
-											} else {
-												echo ' ';
-											}
-											echo date('M d, Y', strtotime($reminder['date']));
-										} else {
-											echo $person.$reminder['other'];
-											if($reminder['iswas'] != 'n/a') {
-												echo ' '.$reminder['iswas'].' ';
-											} else {
-												echo ' ';
-											}
-											echo date('M d, Y', strtotime($reminder['date']));
-										}
-										
-									}
-									if(isset($reminder['note'])) {
-										if($reminder['note'] != '') {
-											echo '<br>Note: '.$reminder['note'];
-										}
-									}
-								echo '</div>';
-							echo '</div>';
-							echo '<div class="delete"></div>';
-						echo '</div>';
-					}
-				echo '</div>';
-				echo '<div class="big-link done-editing" data-category="'.$category.'">Finish Editing</div>';
-			echo '</div>';
-		}
-	}
-}
-
 add_action( 'wp_ajax_nopriv_update_reminder_categories', 'update_reminder_categories_callback' );
 add_action( 'wp_ajax_update_reminder_categories', 'update_reminder_categories_callback' );
 function update_reminder_categories_callback() {
 	global $current_user;
 	$saved = $_POST['save'];
-	if($saved == '') {
-		$sanitized_saved_ids = array();
-	} else {
-		$sanitized_saved_ids = array_map( 'intval', $saved );
-	}
-	
 	
 	$profile_page_id = get_user_meta($current_user->ID,'user_profile_page',true);
 	$saved_reminders = maybe_unserialize(get_post_meta($profile_page_id,'user_reminders',true));
 	$new_save = array();
 	//if(isset($saved_reminders["$category"])) {
-		foreach($sanitized_saved_ids as $key) {
-			$new_save[] = $saved_reminders["$key"];
+		foreach($saved as $save) {
+			$id = (int) $save['id'];
+			$saved_reminders["$id"]["note"] = $save['note'];
+			$saved_reminders["$id"]["tag"] =  $save['tag'];
+			$new_save[] = $saved_reminders["$id"];
 		}
 		$saved_reminders = $new_save;
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
+
+		echo json_encode(
+			array(
+				'reminders' => process_gpt_reminders($new_save, $current_url->ID)
+			)
+		);
+		
 	//}
 	wp_die();
 }
@@ -1026,22 +668,26 @@ function get_chat_gpt_response($prompt) {
 
 
 	$prompt_instructions = "Analyze the user input ## {$prompt} ##.
-	
-	Determine if it contains information about a birthday or birth and assign it to the bool variable 'is_birthday'.
 
-	Create the variable 'about_me'. Assign 'about_me' true if the user input is about the user or contains 'I'. 'about_me' is false otherwise.
+	Determine the tense of the user input and assign it to the variable 'tense'.
 
-	Create the variable 'rephrase'. Reword the user input, removing the date. If 'about_me' false true use the 'present perfect continuous' tense, otherwise use 'present perfect continuous'. Assign it to the variable 'rephrase'. Assign the tense used to the variable 'tense'.
+	Determine if user input contains information about a birthday and assign it to the bool variable 'is_birthday'.
+
+	Determine if user input contains a singular first-person pronoun like 'I'.
+
+	Find the complement (Predicate Nominative) in the user input and assign it to the variable 'complement'.
+
+	Remove any mention of a date in the user input and assign it to the variable 'phrase'.
 
 	Return as a JSON object in this format:
 	{
 		'is_birthday' : is_birthday,
-		'about_me' : 'about_me',
-		'primary_subject' : {extracted_primary_subject},
-		'primary_action' : {extracted_primary_action},
-		'date' : '{extracted_date}',
-		'rephrased' : rephrase,
-		'tense' : tense
+		'primary_subject' : {extracted_complete_subject},
+		'about_me' : {contains_singular_first_person_pronoun},
+		'date' : '{extracted_date_information}',
+		'phrase' : phrase,
+		'tense': tense,
+		'complement' : complement
 	}";
 	
 	$data = array(
@@ -1050,7 +696,7 @@ function get_chat_gpt_response($prompt) {
 		'messages' => array(
 			array(
 				'role' => 'system',
-				'content' => 'You are a computer specializing in the english language, designed to extract information from a string. You have no emotion. Format the answer as a JSON object'
+				'content' => 'You are a helpful assistant. Format the answer as a JSON object'
 			),
 			array(
 				'role' => 'user',
@@ -1126,6 +772,7 @@ function add_gpt_reminder_callback() {
 	$prompt = sanitize_text_field($_POST['prompt']);
 	$note = sanitize_text_field($_POST['note']) ?? '';
 	$public = sanitize_text_field($_POST['public']) ?? '';
+	$tag = sanitize_text_field($_POST['tag']) ?? '';
 
 	$response = get_chat_gpt_response($prompt);
 	if($response['error'] == 1) {
@@ -1147,25 +794,29 @@ function add_gpt_reminder_callback() {
 		$date = $message['date'];
 		$is_birthday = $message['is_birthday'];
 		$about_me = $message['about_me'];
-		$primary_subject = $message['primary_subject'];
-		$primary_action = $message['primary_action'];
-		$rephrased = $message['rephrased'];
+		$phrase = $message['phrase'];
 		$tense = $message['tense'];
+		$primary_subject = $message['primary_subject'];
+		$complement = $message['complement'];
 
-		$saved_reminders[] = array(
+		$new_reminder = array(
 			'date' => $date,
 			'is_birthday' => $is_birthday,
-			'about_me' => $about_me,
 			'primary_subject' => $primary_subject,
-			'primary_action' => $primary_action,
-			'rephrased' => $rephrased,
-			'tense' => $tense,
+			'about_me' => $about_me,
+			'phrase' => $phrase,
+			'tense' => $message['tense'],
+			'complement' => $message['complement'],
 			'note' => $note,
 			'public' => $public,
+			'tag' => $tag
 		);
+
+		$saved_reminders[] = $new_reminder;
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
 		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
-		$reminder .= process_gpt_reminder($date, $is_birthday, $about_me, "$primary_subject", "$primary_action", "$rephrased", "$tense", "$note");
+		//$reminder .= '<pre>'.print_r($new_reminder,true).'</pre>';
+		$reminder .= process_gpt_reminder($new_reminder);
 		$reminder .= '</div><div class="delete"></div></div>';
 		echo json_encode(
 			array(
@@ -1185,98 +836,158 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	if($user_timezone == '') {
 		$user_timezone = 'America/New_York';
 	}
-	
+	$reminders_html = '';
 	$is_my_page = true;
 	if($author_id != null) {
 		if($current_user->ID != $author_id) {
 			$is_my_page = false;
 		}
 	}
+	$tags = array();
+	foreach($reminders as $index => $reminder) {
+		if($reminder['tag'] != '') {
+			if(!in_array($reminder['tag'],$tags)) {
+				$tags[] = $reminder['tag'];
+			}
+		}
+	}
+	if(!empty($tags)) {
+		sort($tags);
+		$reminders_html .= '<div class="reminder-tags">';
+		$reminders_html .= '<div class="tag-btn" data-tag="All">All</div>';
+		foreach($tags as $tag) {
+			$reminders_html .= '<div class="tag-btn" data-tag="'.$tag.'">'.$tag.'</div>';
+		}
+		$reminders_html .= '</div>';
+	}
+	
 	foreach($reminders as $index => $reminder) {
 		if($reminder['public'] == 'true' || $is_my_page) {
 			//print_r($reminder);
 			if(isset($reminder['date'])) {
-				$date = $reminder['date'];
-				$is_birthday = $reminder['is_birthday'] ?? false;
-				$about_me = $reminder['about_me'] ?? false;
-				$primary_subject = $reminder['primary_subject'];
-				$primary_action = $reminder['primary_action'];
-				$rephrased = $reminder['rephrased'] ?? '';
-				$tense = $reminder['tense'] ?? '';
-				$note = $reminder['note'];
-				
-				echo '<div class="reminder" data-id="'.$index.'">';
-					echo '<div class="handle"></div>';
-					echo '<div class="reminder-content">';
-						echo process_gpt_reminder($date, $is_birthday, $about_me, $primary_subject, $primary_action, $rephrased, $tense, $note, $user_timezone);
-					echo '</div>';
-					echo '<div class="delete"></div>';
-				echo '</div>';
-			
+				if($reminder['tag'] != '') {
+					$tag = $reminder['tag'];
+				} else {
+					$tag = '';
+				}
+				$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
+					$reminders_html .= '<div class="handle"></div>';
+					$reminders_html .= '<div class="reminder-content">';
+						$reminders_html .= process_gpt_reminder($reminder, $user_timezone);
+					$reminders_html .= '</div>';
+					$reminders_html .= '<div class="delete"></div>';
+				$reminders_html .= '</div>';
 			}
 		}
 	}
+	return $reminders_html;
 }
 
-function process_gpt_reminder($date, $is_birthday, $about_me, $primary_subject, $primary_action, $rephrased, $tense, $note = false, $timezone = false) {
+function process_gpt_reminder($reminder, $timezone = false) {
+
 	$return = '';
-	if($timezone === false) {
-		$timezone = 'America/New_York';
-	}
-	$tz  = new DateTimeZone($timezone);
-	$normalized_date = date('Y-m-d', strtotime($date));
-	$time_calulation = DateTime::createFromFormat('Y-m-d', $normalized_date, $tz)->diff(new DateTime('now', $tz));
 	
-	if($time_calulation->y == 0) {
-		if($time_calulation->m  > 0) {
-			if($time_calulation->m == 1) {
-				$time = "$time_calulation->m month";
-			} else {
-				$time = "$time_calulation->m months";
+	$return .= '<div class="tags">';
+		if($reminder['tag']) {
+			$val = $reminder['tag'];
+			$placeholder = '';
+		} else {
+			$val = '';
+			$placeholder = 'placeholder';
+		}
+		$return .= '<input type="text" value="'.$reminder['tag'].'" placeholder="Tag" class="tag '.$placeholder.'" />';
+		
+	$return .= '</div>';
+	$return .= '<div class="reminder-data">';
+		if($reminder['date'] != '') {
+			if($timezone === false) {
+				$timezone = 'America/New_York';
 			}
-		} else {
-			$time = "$time_calulation->d days";
-		}
-	} else {
-		$time = "$time_calulation->y years";
-	}
-	if($is_birthday) {
-		$ignore_me = array('you','I','myself');
-		if($about_me && in_array($primary_subject,$ignore_me)) {
-			$return .= "I am <span>$time old</span>";
-		} else {
-			$return .= "$primary_subject is <span>$time old</span>";
-		}
-	} else {
-		$phrase = rtrim($rephrased, '.');
-		$return .= "$phrase <span>$time";
-		if($tense == 'present perfect') {
-			$return .= " ago";
-		}
-		$return .= "</span>";
-	}
-	$return .= '<div class="detail">';
-		$subject = str_replace(',','',$primary_subject);
-		if($about_me) {
-			if($is_birthday) {
-				$subject = 'My';
+			$tz  = new DateTimeZone($timezone);
+			$normalized_date = date('Y-m-d', strtotime($reminder['date']));
+			$time_calulation = DateTime::createFromFormat('Y-m-d', $normalized_date, $tz)->diff(new DateTime('now', $tz));
+			
+			if($time_calulation->y == 0) {
+				if($time_calulation->m  > 0) {
+					if($time_calulation->m == 1) {
+						$time = "$time_calulation->m month";
+					} else {
+						$time = "$time_calulation->m months";
+					}
+				} else {
+					$time = "$time_calulation->d days";
+				}
 			} else {
-				$subject = 'I';
+				$time = "$time_calulation->y years";
 			}
-		}
-		$return .= $subject;
-		if($is_birthday && !$about_me) {
-			$return .= "&rsquo;s";
-		}
-		if($is_birthday) {
-			$return .= " birthday is";
+			if($reminder['is_birthday']) {
+				if($reminder['about_me']) {
+					$return .= "I am <span>$time old</span>";
+				} else {
+					$subject = ucfirst($reminder['primary_subject']);
+					$return .= "$subject";
+					if(strpos($subject, ',') !== false) {
+						$return .= ",";
+					}
+					$return .= " is <span>$time old</span>";
+				}
+			} else {
+				$phrase = rtrim($reminder['phrase'], '.');
+				$return .= "$phrase";
+				if(strpos($phrase,',')) {
+					$return .= ',';
+				}
+				if($reminder['tense'] == 'future') {
+					$return .= " in";
+				}
+				$return .= " <span>$time";
+				if($reminder['tense'] == 'past') {
+					$return .= " ago";
+				}
+				$return .= "</span>";
+			}
+			$return .= '<div class="detail">';
+				/*$subject = ucfirst(str_replace(',','',$primary_subject));*/
+				
+				
+				if($reminder['is_birthday']) {
+					if($reminder['about_me']) {
+						$return .= "My";
+					} else {
+						$return .= "Their";
+					}
+					$return .= " birthday is ";
+				}
+				
+				$return .= date('F jS, Y', strtotime($reminder['date']));
+				if($reminder['note'] !== '') {
+					$note = $reminder['note'];
+					$placeholder = '';
+				} else {
+					$note = '';
+					$placeholder = 'placeholder';
+				}
+				$return .= '<div><input class="note '.$placeholder.'" placeholder="note" value="'.$note.'" /></div>';
+			$return .= '</div>';
 		} else {
-			$return .= " $primary_action";
-		}
-		$return .= " ";
-		$return .= date('F jS, Y', strtotime($date));
-		if($note !== false) {
-			$return .= "<br>$note";
+			if(isset($reminder['complement'])) {
+				$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $reminder['phrase']);
+			} else {
+				$phrase = $reminder['phrase'];
+			}
+			
+			$return .= "$phrase";
+			$return .= '<div class="detail">';
+				if($reminder['note'] !== '') {
+					$note = $reminder['note'];
+					$placeholder = '';
+				} else {
+					$note = '';
+					$placeholder = 'placeholder';
+				}
+				$return .= '<div><input class="note '.$placeholder.'" placeholder="note" value="'.$note.'" /></div>';
+			$return .= '</div>';
+
 		}
 	$return .= '</div>';
 	return $return;
