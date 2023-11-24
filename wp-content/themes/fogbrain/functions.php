@@ -245,7 +245,7 @@ function check_login_page_for_user() {
 add_filter( 'auth_cookie_expiration', 'fog_auth_cookie_expiration_30_days', 10, 3 );
 function fog_auth_cookie_expiration_30_days( $seconds, $user_id, $remember_me ) {
     if ( $remember_me ) {
-        return 12 * MONTH_IN_SECONDS;
+        return 31556926; //1 year in seconds
     } else {
 		return 31556926; //1 year in seconds
 	}
@@ -332,7 +332,7 @@ function check_login_code_callback() {
 				wp_die();
 			} else {
 				//Log them in
-				wp_set_auth_cookie( $user_id, 1, is_ssl() );
+				wp_set_auth_cookie( $user_id, true, is_ssl() );
 
 				//create their post
 				$post_args = array(
