@@ -54,6 +54,17 @@
         });
     }
     updateTagSize();
+
+    function updateNoteSize() {
+        $('.note').each(function() {
+            if($(this).val().length > 20) {
+                $(this).attr('size',$(this).val().length);
+            } else {
+                $(this).attr('size',20);
+            }
+        });
+    }
+    updateNoteSize();
     
     $(document).on('submit','#login',function(e) {
         e.preventDefault();
@@ -419,6 +430,7 @@
                 response = JSON.parse(data);
                 $('.reminders').html(response.reminders);
                 updateTagSize();
+                updateNoteSize();
                 $( '.reminder-summary' ).removeClass('is-editing');
 
                 //process_gpt_reminders
@@ -468,6 +480,7 @@
                         $('.edit-reminders').show();
                         $('#prompt').val('')
                         $('#note').val('');
+                        $('#tag').val('');
                         $('.reminders').append(response.reminder);
                     }
                 }
@@ -481,13 +494,7 @@
     });
 
     
-    $('.note').each(function() {
-        if($(this).val().length > 20) {
-            $(this).attr('size',$(this).val().length);
-        } else {
-            $(this).attr('size',20);
-        }
-    });
+    
 
     $(document).on('keyup','.tag',function() {
         if($(this).val().length > 5) {
