@@ -394,14 +394,9 @@
 
     var sortList = '';
     $(document).on('click','.edit-reminders',function() {
-        /*if($( '.reminder-category .reminders' ).hasClass('ui-sortable')) {
-            $('.is-editing').removeClass('is-editing');
-            $( '.ui-sortable' ).sortable('disable');
-            
-        }
-        var category = $(this).attr('data-category');*/
         $('.hidden-reminder').removeClass('hidden-reminder');
         $( '.reminder-summary' ).addClass('is-editing');
+        $( '.reminder-summary .reminders .note').attr('contenteditable',true);
         $( '.reminder-summary .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
             sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
           } 
@@ -409,6 +404,7 @@
     });
 
     $(document).on('click','.done-editing',function() {
+        $( '.reminder-summary .reminders .note').attr('contenteditable',false);
         $( '.reminder-summary .reminders' ).sortable('disable');
         var save = [];
         $( '.reminder-summary .reminder').each(function() {
@@ -416,7 +412,7 @@
                 save.push({
                     id : $(this).attr('data-id'),
                     tag : $(this).find('.tag').val(),
-                    note : $(this).find('.note').val()
+                    note : $(this).find('.note').text()
                 });
             }
         });

@@ -648,8 +648,8 @@ function update_reminder_categories_callback() {
 	//if(isset($saved_reminders["$category"])) {
 		foreach($saved as $save) {
 			$id = (int) $save['id'];
-			$saved_reminders["$id"]["note"] = $save['note'];
-			$saved_reminders["$id"]["tag"] =  $save['tag'];
+			$saved_reminders["$id"]["note"] = sanitize_text_field($save['note']);
+			$saved_reminders["$id"]["tag"] =  sanitize_text_field($save['tag']);
 			$new_save[] = $saved_reminders["$id"];
 		}
 		$saved_reminders = $new_save;
@@ -1006,7 +1006,7 @@ function process_gpt_reminder($reminder, $timezone = false) {
 					$note = '';
 					$placeholder = 'placeholder';
 				}
-				$return .= '<div><input class="note '.$placeholder.'" placeholder="note" value="'.$note.'" /></div>';
+				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
 			$return .= '</div>';
 		} else {
 			//$return .= '<pre>'.print_r($reminder,true).'</pre>';
@@ -1031,7 +1031,7 @@ function process_gpt_reminder($reminder, $timezone = false) {
 					$note = '';
 					$placeholder = 'placeholder';
 				}
-				$return .= '<div><input class="note '.$placeholder.'" placeholder="note" value="'.$note.'" /></div>';
+				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
 			$return .= '</div>';
 
 		}
