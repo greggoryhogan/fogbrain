@@ -677,9 +677,9 @@ function get_chat_gpt_response($prompt) {
 
 	Determine if user input contains a singular first-person pronoun like 'I'.
 
-	Find the complement (Predicate Nominative) in the user input and assign it to the variable 'complement'.
+	Find a complement (Predicate Nominative) in the user input and assign it to the variable 'complement'.
 
-	If 'complement' is empty, find a location mentioned in the user input and assign it to the variable 'complement'.
+	If a complement was not found, find a location mentioned in the user input and assign it to the variable 'complement'.
 
 	Remove any mention of a date in the user input and assign it to the variable 'phrase'.
 

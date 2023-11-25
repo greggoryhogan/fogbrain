@@ -800,7 +800,9 @@ footer {
         max-height: 0px;
         overflow: hidden;
         transition: .5s max-height;
-        
+        p {
+            margin-bottom: 10px;
+        }
         &.is-active {
             max-height: 999px;
         }
