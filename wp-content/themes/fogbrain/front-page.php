@@ -21,7 +21,7 @@
                         'tense' => 'past perfect continuous',
                         'complement' => '',
                         'note' => 'Vegas, baby!',
-                        'public' => true,
+                        'public' => 'true',
                         'tag' => 'Accomplishments'
                     );
                     echo process_gpt_reminder($reminder);
@@ -38,7 +38,7 @@
                         'tense' => 'past perfect continuous',
                         'complement' => '',
                         'note' => '',
-                        'public' => true,
+                        'public' => 'true',
                         'tag' => 'Birthdays'
                     );
                     echo process_gpt_reminder($reminder);

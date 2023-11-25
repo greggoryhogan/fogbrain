@@ -26,7 +26,7 @@ function register_bhfe_scripts() {
 	// Enqueue jQuery UI autocomplete
 	wp_enqueue_script('jquery-ui-autocomplete');
 	wp_enqueue_script('touchpunch', $bhfe_dir.'/js/jquery.ui.touch-punch.min.js',array(),'',true);
-	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable','touchpunch', 'jquery-ui-autocomplete'),'',true);
+	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable','touchpunch', 'jquery-ui-autocomplete'),$version,true);
 	global $fogbrain_user_id, $current_user;
 	wp_localize_script( 'fogbrain-main', 'site_js', array(
 		'ajax_url' => admin_url( 'admin-ajax.php' ),

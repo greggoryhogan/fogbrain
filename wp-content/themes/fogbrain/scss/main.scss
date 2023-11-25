@@ -791,15 +791,29 @@ footer {
     }
 }
 .has-arrow {
-    &:after {
-        margin-left: 20px;
-        transition: .2s margin;
-        content: '\2192';
+    @media all and (min-width: 768px) {
+        padding-right: 94px;
+        position: relative;
+        &:after {
+            position: absolute;
+            right: 50px;
+            transition: .2s transform;
+            content: '\2192';
+        }
+    }
+    @media all and (max-width: 768px) {
+        text-align: center;
+        font-size: 18px;
+        display: block !important;
+        &:after {
+            position: relative;
+            margin-left: 10px;
+            content: '\2192';
+        }
     }
     &:hover {
         &:after {
-            margin-right: -5px;
-            margin-left: 25px;
+            transform: translateX(5px);
         }
     }
 }
@@ -809,6 +823,9 @@ footer {
         border: 4px solid rgba(11,34,40,.6);
         border-radius: 20px;
         padding: 30px;
+    }
+    .big-link {
+        display: inline-block;
     }
     .fog-bulbs {
         @media all and (max-width: 768px) {
