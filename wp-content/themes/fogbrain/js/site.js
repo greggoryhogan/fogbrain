@@ -353,7 +353,10 @@
             $('.reminder-form').removeClass('is-active');
             $(this).text('Add Reminder');
             $('.edit-reminders').show();
-            $( '#tag' ).autocomplete( "destroy" );
+            
+            if($( '#tag' ).autocomplete( "instance" ) !== undefined) {
+                $( '#tag' ).autocomplete( "destroy" );
+            }
             //window.location.href = window.location.href;
         } else {
             $('.reminder-form').addClass('is-active');
@@ -498,7 +501,7 @@
       ];
     //Add exams to cpt
     //var categorySelect = $('.tag');
-    $('body').on('focus', '.tag', function () {
+    $('body').on('click', '.tag', function () {
         $(this).autocomplete({
             source: availableTags,
             minLength: 0,
@@ -511,6 +514,9 @@
             select: function(event, ui) {
                 // Clear the input field
                 $(this).val( ui.item.value );
+                if ($(this).hasClass('ui-autocomplete-input')) {
+                    $(this).autocomplete('destroy')
+                }
                 return false;
             }
         });
@@ -518,21 +524,23 @@
         $(this).autocomplete('search', $(this).val())
     });
     
-    $('#tag').autocomplete({
-        source: availableTags,
-        minLength: 0,
-        classes: {
-            "ui-autocomplete": 'add-reminder-select',
-        },
-        position: {
-            my: "left+0 top-10",
-        },
-        select: function(event, ui) {
-            // Clear the input field
-            $(this).val( ui.item.value );
-            return false;
-        }
-    }).focus(function() {
+    $('body').on('click', '#tag', function () {
+        $(this).autocomplete({
+            source: availableTags,
+            minLength: 0,
+            classes: {
+                "ui-autocomplete": 'add-reminder-select',
+            },
+            position: {
+                my: "left+0 top-10",
+            },
+            select: function(event, ui) {
+                // Clear the input field
+                $(this).val( ui.item.value );
+                $( '#tag' ).autocomplete( "destroy" );
+                return false;
+            }
+        });
         $(this).val('');
         $(this).autocomplete('search', $(this).val())
     });
