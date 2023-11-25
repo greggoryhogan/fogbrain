@@ -8,20 +8,47 @@
             <p>Here&rsquo;s some reminders I&rsquo;ve saved&nbsp;-<p>
         </div>
         <div class="col-12 col-md-9 col-lg-8">
-            <div class="reminders">
-                <div class="reminder">
-                    I've been married to Rose for <span>2 years</span>.
-                    <div class="detail">
-                        We were married on September 10<sup>th</sup>, 2021.
+            <div class="reminder-summary">
+                <div class="reminders">
+                    <div class="reminder">
+                    <?php 
+                    $reminder = array(
+                        'date' => 'September 10, 2021',
+                        'is_birthday' => false,
+                        'primary_subject' => '',
+                        'about_me' => true,
+                        'phrase' => 'I have been married',
+                        'tense' => 'past perfect continuous',
+                        'complement' => '',
+                        'note' => 'Vegas, baby!',
+                        'public' => true,
+                        'tag' => 'Accomplishments'
+                    );
+                    echo process_gpt_reminder($reminder);
+                    ?>
                     </div>
-                </div>
-                <div class="reminder">
-                    My dog, Harvey, is <span>6 years old</span>.
-                    <div class="detail">
-                        He was born November 17<sup>th</sup>, 2017.
+                    <div class="reminder">
+                    <?php 
+                    $reminder = array(
+                        'date' => 'November 17, 2017',
+                        'is_birthday' => true,
+                        'primary_subject' => 'My dog, Harvey',
+                        'about_me' => false,
+                        'phrase' => 'My dog, Harvey, is',
+                        'tense' => 'past perfect continuous',
+                        'complement' => '',
+                        'note' => '',
+                        'public' => true,
+                        'tag' => 'Birthdays'
+                    );
+                    echo process_gpt_reminder($reminder);
+                    ?>
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="col-12 col-md-9">
+            <p>You can use Fog Brain as your personal notepad, or choose to share your reminders with friends and family. Decide which reminders are public and which ones are for your eyes only. How you use Fog Brain is entirely up to you.</p>
         </div>
         <div class="col-12 col-md-9">
             <p>Want to add your own dates to remember?</p>

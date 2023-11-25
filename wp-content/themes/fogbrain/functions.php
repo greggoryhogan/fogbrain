@@ -49,6 +49,7 @@ function bhfe_early_head_customization() {
 	<meta name="apple-mobile-web-app-status-bar-style" content="black">
 	<meta name="apple-mobile-web-app-title" content="Fog Brain">
 	<meta name="theme-color" content="#008080" />
+	<link rel='shortcut icon' href="<?php echo THEME_URI; ?>/img/fav.png" />
 	<?php 
 	if ( is_singular( 'brain' ) ) {
         echo '<meta name="robots" content="noindex, nofollow">';
@@ -650,6 +651,7 @@ function update_reminder_categories_callback() {
 			$id = (int) $save['id'];
 			$saved_reminders["$id"]["note"] = sanitize_text_field($save['note']);
 			$saved_reminders["$id"]["tag"] =  sanitize_text_field($save['tag']);
+			$saved_reminders["$id"]["public"] =  sanitize_text_field($save['public']);
 			$new_save[] = $saved_reminders["$id"];
 		}
 		$saved_reminders = $new_save;
@@ -824,7 +826,7 @@ function add_gpt_reminder_callback() {
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
 		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
 		//$reminder .= '<pre>'.print_r($new_reminder,true).'</pre>';
-		$reminder .= process_gpt_reminder($new_reminder);
+		$reminder .= process_gpt_reminder($new_reminder, 'null', true);
 		$reminder .= '</div><div class="delete"></div></div>';
 		echo json_encode(
 			array(
@@ -878,11 +880,15 @@ function process_gpt_reminders($reminders, $author_id = null) {
 				$tag = '';
 			}
 			$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
-				$reminders_html .= '<div class="handle"></div>';
+				if($is_my_page) {	
+					$reminders_html .= '<div class="handle"></div>';
+				}
 				$reminders_html .= '<div class="reminder-content">';
-					$reminders_html .= process_gpt_reminder($reminder, $user_timezone);
+					$reminders_html .= process_gpt_reminder($reminder, $user_timezone, $is_my_page);
 				$reminders_html .= '</div>';
-				$reminders_html .= '<div class="delete"></div>';
+				if($is_my_page) {
+					$reminders_html .= '<div class="delete"></div>';
+				}
 			$reminders_html .= '</div>';
 		}
 	}
@@ -899,21 +905,10 @@ function validDate($date, $format = 'Y-m-d') {
 	return $d && $d->format($format) === $normalized_date;
 }
 
-function process_gpt_reminder($reminder, $timezone = false) {
+function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false) {
 
 	$return = '';
 	
-	$return .= '<div class="tags">';
-		if($reminder['tag']) {
-			$val = $reminder['tag'];
-			$placeholder = '';
-		} else {
-			$val = '';
-			$placeholder = 'placeholder';
-		}
-		$return .= '<input type="text" value="'.$reminder['tag'].'" placeholder="Tag" class="tag '.$placeholder.'" />';
-		
-	$return .= '</div>';
 	$return .= '<div class="reminder-data">';
 		$reminder_date = str_replace(',','',$reminder['date']);
 		if(validDate($reminder_date)) {
@@ -938,91 +933,114 @@ function process_gpt_reminder($reminder, $timezone = false) {
 			} else {
 				$time = "$time_calulation->y years";
 			}
-			if($reminder['is_birthday']) {
-				if($reminder['about_me']) {
-					$return .= "I am <span>$time old</span>";
-				} else {
-					$subject = ucfirst($reminder['primary_subject']);
-					$return .= "$subject";
-					if(strpos($subject, ',') !== false) {
-						$return .= ",";
+			$return .= '<div class="phrase">';
+				if($reminder['is_birthday']) {
+					if($reminder['about_me']) {
+						$return .= "I am <span>$time old</span>";
+					} else {
+						$subject = ucfirst($reminder['primary_subject']);
+						$return .= "$subject";
+						if(strpos($subject, ',') !== false) {
+							$return .= ",";
+						}
+						$return .= " is <span>$time old</span>";
 					}
-					$return .= " is <span>$time old</span>";
+				} else {
+					$phrase = rtrim($reminder['phrase'], '.');
+					if($reminder['tense'] == 'present perfect') {
+						$phrase = rtrim($phrase, 'since');	
+					}
+					$return .= "$phrase";
+					if(strpos($phrase,',')) {
+						$return .= ',';
+					}
+					
+					if($reminder['tense'] == 'future') {
+						$return .= " in";
+					}
+					$return .= " <span>$time";
+					if($reminder['tense'] == 'past') {
+						$return .= " ago";
+					}
+					$return .= "</span>";
 				}
-			} else {
-				$phrase = rtrim($reminder['phrase'], '.');
-				if($reminder['tense'] == 'present perfect') {
-					$phrase = rtrim($phrase, 'since');	
-				}
-				$return .= "$phrase";
-				if(strpos($phrase,',')) {
-					$return .= ',';
-				}
-				
-				if($reminder['tense'] == 'future') {
-					$return .= " in";
-				}
-				$return .= " <span>$time";
-				if($reminder['tense'] == 'past') {
-					$return .= " ago";
-				}
-				$return .= "</span>";
-			}
+			$return .= '</div>';
 			$return .= '<div class="detail">';
 				/*$subject = ucfirst(str_replace(',','',$primary_subject));*/
 				if($reminder['tag'] != '') {
-					$tag = strtolower(str_replace(' ','-',$reminder['tag']));
-					$return .= '<span class="tag-icon '.$tag.'"></span>';
+					$tag = strtolower(str_replace(' ','-',str_replace(' & ','-',$reminder['tag'])));
+					//if($tag == 'birthdays') {
+						$return .= '<span class="tag-icon '.$tag.'"></span>';
+					//}
 				}
-				/*if($reminder['is_birthday']) {
-					if($reminder['about_me']) {
-						$return .= "My";
-					} else {
-						$return .= "Their";
-					}
-					$return .= " birthday is ";
-				}*/
 				
-				/*$parsed = date_parse($reminder['date']);
-				$return .= print_r($parsed,true);
-				if($parsed['day'] != '') {
-					$return .= date('F jS, Y', strtotime($reminder['date']));
-				} else {
-					$return .= date('F, Y', strtotime($reminder['date']));
-				}*/
 				// Check if the input string contains a numeric value for the day
+				$return .= '<div class="detail-date">';
 				if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $reminder_date, $matches)) {
-					$return .= date('F jS, Y', strtotime($reminder_date)) .'<div class="clear"></div>';
+					$return .= date('F jS, Y', strtotime($reminder_date));
 				} else {
-					$return .= date('F, Y', strtotime($reminder_date)) .'<div class="clear"></div>';
+					$return .= date('F, Y', strtotime($reminder_date));
 				}
-
+				$return .= '</div>';
 
 				
 				if($reminder['note'] !== '') {
 					$note = $reminder['note'];
 					$placeholder = '';
+					$sep = '&nbsp;-&nbsp;';
 				} else {
 					$note = '';
+					$sep = ' ';
 					$placeholder = 'placeholder';
 				}
+				$return .= '<div class="sep">'.$sep.'</div>';
+				$return .= '<div class="tags">';
+					if($reminder['tag']) {
+						$val = $reminder['tag'];
+						$placeholder = '';
+					} else {
+						$val = '';
+						$placeholder = 'placeholder';
+					}
+					$return .= '<input type="text" value="'.$reminder['tag'].'" placeholder="Category" class="tag existing '.$placeholder.'" />';
+					
+				$return .= '</div>';
 				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
+				$public = $reminder['public'];
+				if($public == 'false') {
+					$return .= '<div class="public-notice">&nbsp;&dash;&nbsp;<strong>PRIVATE</strong></div>';
+				}
 			$return .= '</div>';
 		} else {
 			//$return .= '<pre>'.print_r($reminder,true).'</pre>';
-			if(isset($reminder['complement'])) {
-				$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $reminder['phrase']);
-			} else {
-				$phrase = $reminder['phrase'];
-			}
-			if(str_ends_with($phrase,'.')) {
-				$phrase = rtrim($phrase, '.');
-			}
-			$return .= "$phrase";
+			$return .= '<div class="phrase">';
+				if(isset($reminder['complement'])) {
+					$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $reminder['phrase']);
+				} else {
+					$phrase = $reminder['phrase'];
+				}
+				if(str_ends_with($phrase,'.')) {
+					$phrase = rtrim($phrase, '.');
+				}
+				$return .= "$phrase";
+			$return .= '</div>';
 			$return .= '<div class="detail">';
+				$return .= '<div class="tags">';
+					if($reminder['tag']) {
+						$val = $reminder['tag'];
+						$placeholder = '';
+					} else {
+						$val = '';
+						$placeholder = 'placeholder';
+					}
+					$return .= '<input type="text" value="'.$reminder['tag'].'" placeholder="Category" class="tag existing '.$placeholder.'" />';
+					
+				$return .= '</div>';
 				if($reminder['tag'] != '') {
-					$tag = strtolower(str_replace(' ','-',$reminder['tag']));
-					$return .= '<span class="tag-icon '.$tag.'"></span>';
+					$tag = strtolower(str_replace(' ','-',str_replace(' & ','-',$reminder['tag'])));
+					//if($tag == 'birthdays') {
+						$return .= '<span class="tag-icon '.$tag.'"></span>';
+					//}
 				}
 				if($reminder['note'] !== '') {
 					$note = $reminder['note'];
@@ -1032,9 +1050,25 @@ function process_gpt_reminder($reminder, $timezone = false) {
 					$placeholder = 'placeholder';
 				}
 				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
+				$public = $reminder['public'];
+				if($public == 'false') {
+					$return .= '<div class="public-notice">&nbsp;&dash;&nbsp;<strong>PRIVATE</strong></div>';
+				}
 			$return .= '</div>';
-
+			
 		}
+		if($is_my_page) {
+			$return .= '<div class="public">';
+				$public = $reminder['public'];
+				if($public == 'true') {
+					$checked = 'checked="checked"';
+				} else {
+					$checked = '';
+				}
+				$return .= '<label><input type="checkbox" class="public-val" '.$checked.' /> This reminder is public</label>';
+			$return .= '</div>';
+		}
+		
 	$return .= '</div>';
 	return $return;
 }
