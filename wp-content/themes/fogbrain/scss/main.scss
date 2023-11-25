@@ -497,6 +497,105 @@ footer {
         }
         .detail {
             font-size: 16px;
+            div {
+                display: inline-block;
+            }
+            .tag-icon {
+                display: inline-block;
+                &:before {
+                    margin-right: 4px;
+                    display: inline-block;
+                }
+                &.birthdays {
+                    &:before {
+                        content: '\01F382';
+                    }
+                }
+                &.children {
+                    &:before {
+                        content: '\01F476';
+                    }
+                }
+                &.fun-facts {
+                    &:before {
+                        content: '\01F4D3';
+                    }
+                }
+                &.pets {
+                    &:before {
+                        content: '\01F436';
+                    }
+                }
+                &.travel {
+                    &:before {
+                        content: '\02708';
+                    }
+                }
+                &.vacations {
+                    &:before {
+                        content: '\01F30E';
+                    }
+                }
+                &.special-events {
+                    &:before {
+                        content: '\01F389';
+                    }
+                }
+                &.hobbies {
+                    &:before {
+                        content: '\01F3C4';
+                    }
+                }
+                &.misc {
+                    &:before {
+                        content: '\02754';
+                    }
+                }
+            }
+        }
+        .tag {
+        
+            pointer-events: none;   
+            background: #006868;
+            color: #fff;
+            font-size: 16px;
+            padding: 0 5px;
+            text-align: center;
+            height: 35px;
+            line-height: 35px;
+            border-radius: 10px;
+            display: inline-block;
+            border: none;
+            display: none;
+            &:focus {
+                outline: none;
+            }
+            
+            &.placeholder {
+                display: none;
+                min-width: 20px;
+              
+            }
+            
+        }
+        .note {
+            pointer-events: none;   
+            font-size: 16px;
+            display: inline-block;
+            border: none;
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-family: inherit;
+            font-weight: inherit;
+            &:focus {
+                outline: none;
+            }
+            &.placeholder {
+                display: none;
+                min-width: 20px;
+            }
+            
         }
     }
 }
@@ -529,6 +628,11 @@ footer {
             flex-direction: row-reverse;
             .reminder-data {
                 flex: 1;
+            }
+        }*/
+        /*@media all and (max-width: 768px) {
+            .reminder-data {
+                line-height: 1.5rem;
             }
         }*/
     }
@@ -568,6 +672,9 @@ footer {
         .reminder-tags {
             display: none;
         }
+        .tag-icon {
+            display: none!important;
+        }
         .tag {
             pointer-events: all;
             display: inline-block;
@@ -604,6 +711,11 @@ footer {
         .done-editing {
             display: inline-block;
             font-size: 18px;
+            &.bottom-editor {
+                display: block;
+                margin: 50px auto 20px auto!important;
+                text-align: center;
+            }
         }
         #add-reminder,
         .edit,
@@ -752,56 +864,19 @@ footer {
     .hidden-reminder {
         display: none;
     }
-    .tag {
-        
-        pointer-events: none;   
-        background: #006868;
-        color: #fff;
-        font-size: 16px;
-        padding: 0 5px;
-        text-align: center;
-        height: 35px;
-        line-height: 35px;
-        border-radius: 10px;
-        display: inline-block;
-        border: none;
-        display: none;
-        &:focus {
-            outline: none;
-        }
-        
-        &.placeholder {
-            display: none;
-            min-width: 20px;
-          
-        }
-        
-    }
-    .note {
-        pointer-events: none;   
-        font-size: 16px;
-        display: inline-block;
-        border: none;
-        background: transparent;
-        padding: 0;
-        color: inherit;
-        font-family: inherit;
-        font-weight: inherit;
-        &:focus {
-            outline: none;
-        }
-        &.placeholder {
-            display: none;
-            min-width: 20px;
-        }
-        
-    }
+
+    
     .reminder-form {
         max-height: 0px;
         overflow: hidden;
         transition: .5s max-height;
         p {
             margin-bottom: 10px;
+        }
+        input {
+            &:focus {
+                outline: none!important;
+            }
         }
         &.is-active {
             max-height: 999px;
@@ -972,4 +1047,8 @@ pre {
     white-space: -pre-wrap;      /* Opera 4-6 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+.clear {
+    clear: both;
+    display: block!important;
 }

@@ -530,4 +530,30 @@
         }
     });
 
+
+    
+    var availableTags = [
+        "Birthdays",
+        "Children",
+        "Fun Facts",
+        "Hobbies",
+        "Misc",
+        "Pets",
+        "Special Events",
+        "Travel",
+      ];
+    //Add exams to cpt
+    //var categorySelect = $('.tag');
+    $('.tag').autocomplete({
+        source: availableTags,
+        minLength: 0,
+        select: function(event, ui) {
+            // Clear the input field
+            $(this).val( ui.item.value );
+            return false;
+        }
+    }).focus(function() {
+        $(this).autocomplete('search', $(this).val())
+    });;
+
 })(jQuery); // Fully reference jQuery after this point.

@@ -48,7 +48,7 @@
                                 echo '<input id="prompt" type="text" placeholder="Add your reminder" />';
                                 echo '<div class="flex no-wrap reminder-fields">';
                                     echo '<input type="text" id="note" placeholder="An optional note about this reminder" />';
-                                    echo '<input type="text" id="tag" placeholder="Tag" class="flex-33" />';
+                                    echo '<input type="text" id="tag" placeholder="Category" class="tag flex-33" />';
                                 echo '</div>';
                                 echo '<label><input type="checkbox" id="public" checked="checked" /> This reminder is public</label>';
                                 echo 'Public reminders will remain private if your page is not shared.<br>';
@@ -62,6 +62,7 @@
                         echo process_gpt_reminders($reminders, $author_id);
                     } ?>
                     </div>
+                    <div class="big-link done-editing bottom-editor">Finish Editing</div>
                     <?php 
                     
                     ?>

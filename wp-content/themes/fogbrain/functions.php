@@ -20,9 +20,13 @@ function register_bhfe_scripts() {
 	if(is_page('login')) {
 		wp_enqueue_script('input-mask');
 	}*/
+	wp_enqueue_style('jquery-ui-autocomplete','https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css',false,'1.13.2','all');
 	wp_enqueue_script( 'jquery-ui-sortable' );
+	wp_enqueue_script('jquery-ui-core');
+	// Enqueue jQuery UI autocomplete
+	wp_enqueue_script('jquery-ui-autocomplete');
 	wp_enqueue_script('touchpunch', $bhfe_dir.'/js/jquery.ui.touch-punch.min.js',array(),'',true);
-	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable','touchpunch'),'',true);
+	wp_enqueue_script('fogbrain-main', $bhfe_dir.'/js/site.js', array('jquery','jquery-ui-sortable','touchpunch', 'jquery-ui-autocomplete'),'',true);
 	global $fogbrain_user_id, $current_user;
 	wp_localize_script( 'fogbrain-main', 'site_js', array(
 		'ajax_url' => admin_url( 'admin-ajax.php' ),
@@ -966,16 +970,18 @@ function process_gpt_reminder($reminder, $timezone = false) {
 			}
 			$return .= '<div class="detail">';
 				/*$subject = ucfirst(str_replace(',','',$primary_subject));*/
-				
-				
-				if($reminder['is_birthday']) {
+				if($reminder['tag'] != '') {
+					$tag = strtolower(str_replace(' ','-',$reminder['tag']));
+					$return .= '<span class="tag-icon '.$tag.'"></span>';
+				}
+				/*if($reminder['is_birthday']) {
 					if($reminder['about_me']) {
 						$return .= "My";
 					} else {
 						$return .= "Their";
 					}
 					$return .= " birthday is ";
-				}
+				}*/
 				
 				/*$parsed = date_parse($reminder['date']);
 				$return .= print_r($parsed,true);
@@ -986,9 +992,9 @@ function process_gpt_reminder($reminder, $timezone = false) {
 				}*/
 				// Check if the input string contains a numeric value for the day
 				if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $reminder_date, $matches)) {
-					$return .= date('F jS, Y', strtotime($reminder_date));
+					$return .= date('F jS, Y', strtotime($reminder_date)) .'<div class="clear"></div>';
 				} else {
-					$return .= date('F, Y', strtotime($reminder_date));
+					$return .= date('F, Y', strtotime($reminder_date)) .'<div class="clear"></div>';
 				}
 
 
@@ -1014,6 +1020,10 @@ function process_gpt_reminder($reminder, $timezone = false) {
 			}
 			$return .= "$phrase";
 			$return .= '<div class="detail">';
+				if($reminder['tag'] != '') {
+					$tag = strtolower(str_replace(' ','-',$reminder['tag']));
+					$return .= '<span class="tag-icon '.$tag.'"></span>';
+				}
 				if($reminder['note'] !== '') {
 					$note = $reminder['note'];
 					$placeholder = '';
@@ -1028,4 +1038,5 @@ function process_gpt_reminder($reminder, $timezone = false) {
 	$return .= '</div>';
 	return $return;
 }
+
 ?>
