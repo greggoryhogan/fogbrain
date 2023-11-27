@@ -22,6 +22,7 @@
                     <input type="submit" value="Send" class="big-link" />
                 </form>
                 <div class="action-errors"></div>
+                <p class="age-consent">By logging in to Fog Brain, you agree that you are 13 years of age or older.</p>
             </div>
             <div class="login-actions action-code <?php echo $code_active; ?>">
                 <p>A code has been sent to your email, <span id="emailsentto"></span>.<br><span class="backtologin has-cursor">Make a mistake entering your email?</span></p>
