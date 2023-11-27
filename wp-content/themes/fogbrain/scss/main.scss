@@ -489,6 +489,13 @@ footer {
     margin-bottom: 30px;
     .reminder {
         margin-bottom: 20px;
+        opacity: 0;
+        margin-left: -100px;
+        transition: 1s opacity, .2s margin;
+        &.showing-reminder {
+            opacity: 1;
+            margin-left: 0;
+        }
         &:last-of-type {
             margin-bottom: 0;
         }
@@ -763,7 +770,9 @@ footer {
             }
             .reminder-content {
                 opacity: .3;
-                text-decoration: line-through;
+                .phrase {
+                    text-decoration: line-through;
+                }
             }
         }
     }
@@ -823,6 +832,10 @@ footer {
         border: 4px solid rgba(11,34,40,.6);
         border-radius: 20px;
         padding: 30px;
+        .reminder{
+            opacity: 1!important;
+            margin-left: 0!important;    
+        }
     }
     .big-link {
         display: inline-block;
@@ -869,6 +882,7 @@ footer {
     .close-notification {
         position: absolute;
         right: 25px;
+        top: 15px;
         cursor: pointer;
         &:after {
             content: "\2715";
@@ -908,7 +922,9 @@ footer {
         }
     }
     .hidden-reminder {
-        display: none;
+        max-height: 0px;
+        margin: 0;
+        overflow: hidden;
     }
 
     
@@ -1069,6 +1085,11 @@ footer {
 .edit {
     -webkit-mask-image: url('../img/edit.svg');
     mask-image: url('../img/edit.svg');
+    &.name-edit {
+        align-self: flex-start;
+        margin-top: 5px;
+        width: 20px;
+    }
 }
 .copy {
     -webkit-mask-image: url('../img/copy.svg');
@@ -1122,5 +1143,29 @@ pre {
         border-color: #fff!important;
         background: #fff!important;
         color: #0b2228;
+    }
+}
+.gray-bg {
+    background: #006868;
+}
+.danger-zone {
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 90px;
+    font-size: 18px;
+    h3 {
+        margin-top: 0;
+    }
+    p {
+        margin-bottom: 15px;
+    }
+    a, 
+    #delete-my-account {
+        display: inline-block;
+        cursor: pointer;
+        color: #fefe00;
+        &:hover {
+            color: #fff;
+        }
     }
 }

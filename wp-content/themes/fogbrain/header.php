@@ -16,7 +16,7 @@
                 </div>
                 <div class="col-3">
                     <div class="nav-container">
-                        <button class="nav-toggle">
+                        <button class="nav-toggle" aria-label="Toggle Navigation">
                             <span></span>
                             <span></span>
                             <span></span>

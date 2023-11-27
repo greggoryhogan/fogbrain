@@ -3,7 +3,8 @@
     <div class="row">
         <?php fog_error_notifications();  ?>
         <div class="col-12 col-md-9">
-            <?php if(isset($_GET['login-code'])) {
+            <?php 
+            if(isset($_GET['login-code'])) {
                 $login_active = '';
                 $code_active = 'is-active';
                 $login_code = sanitize_text_field( $_GET['login-code'] );

@@ -23,7 +23,11 @@
                         $saved_profile_img_id = '';
                     }
                 ?>
-                <?php echo '<h1 class="flex align-items-center">'.$image.get_the_author_meta('display_name').'</h1>'; ?>
+                <?php echo '<h1 class="flex align-items-center">'.$image.get_the_author_meta('display_name');
+                if($author_id == $current_user->ID) {
+                    echo '<a href="/profile" class="edit name-edit"></a>';
+                }
+                echo '</h1>'; ?>
                 <?php $share = get_post_meta($post->ID,'share_code',true);
                 if($share != '' && $author_id == $current_user->ID) {
                     echo '<div class="share-link"><span id="share-link">'.get_permalink().'share/'.$share.'</span><span class="share-page-text">Share: </span><div class="copy"></div><a href="/profile" class="edit"></a></div>';
@@ -43,7 +47,7 @@
                                 //https://docs.gravityforms.com/adding-a-form-to-the-theme-file/#function-call
                                 //gravity_form( 1, false, false ); //to do ajax, , false, null, true
                                 //echo '<div class="error-notice"></div>';
-                                echo '<p>Add your reminder. You can type things like &ldquo;My birthday is November 25, 1985&rdquo;, &ldquo;I was married on 9/10/2021&rdquo; or &ldquo;We were married in Las Vegas.&rdquo; If you&rsquo;re using a date in your reminder, be sure to include at least the month and year.</p>';
+                                echo '<p>Add your reminder. You can type things like &ldquo;My birthday is November 25, 1985&rdquo;, &ldquo;I have been married since 9/10/2021&rdquo; or &ldquo;We were married in Las Vegas.&rdquo; If you&rsquo;re using a date in your reminder, be sure to include at least the month and year.</p>';
                                 echo '<p>For your security, do not add sensitive information such as social security or phone numbers.</p>';
                                 echo '<input id="prompt" type="text" placeholder="Add your reminder" />';
                                 echo '<div class="flex no-wrap reminder-fields">';

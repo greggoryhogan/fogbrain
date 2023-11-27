@@ -410,6 +410,9 @@
                 response = JSON.parse(data);
                 $('.reminders').html(response.reminders);
                 $( '.reminder-summary' ).removeClass('is-editing');
+                $( '.reminders .reminder').each(function() {
+                    $(this).addClass('showing-reminder');
+                });
                 $( '.reminder-summary .reminders .note').attr('contenteditable',false);
 
                 //process_gpt_reminders
@@ -461,6 +464,7 @@
                         $('#note').val('');
                         $('#tag').val('');
                         $('.reminders').append(response.reminder);
+                        $('.reminders .reminder:last-of-type').addClass('showing-reminder');
                     }
                 }
             });
@@ -476,13 +480,13 @@
     $(document).on('click','.tag-btn', function() {
         var tag = $(this).attr('data-tag');
         if(tag == 'All') {
-            $('.hidden-reminder').removeClass('hidden-reminder');
+            $('.hidden-reminder').removeClass('hidden-reminder').addClass('showing-reminder');
             $('.is-active').removeClass('is-active');
         } else {
             $('.is-active').removeClass('is-active');
             $(this).addClass('is-active');
-            $('.reminder').not('[data-tag="'+tag+'"]').addClass('hidden-reminder');
-            $('.reminder[data-tag="'+tag+'"]').removeClass('hidden-reminder');
+            $('.reminder').not('[data-tag="'+tag+'"]').removeClass('showing-reminder').addClass('hidden-reminder');
+            $('.reminder[data-tag="'+tag+'"]').removeClass('hidden-reminder').addClass('showing-reminder');
         }
     });
 
@@ -548,5 +552,31 @@
     $('.accordion__item .accordion__title').on('click',function() {
         $(this).parent().toggleClass('is-open').toggleClass('is-closed');
     });
+
+    $(document).on('click','#delete-my-account',function(e) {
+        e.preventDefault();
+        $('#delete-my-account').hide();
+        $.ajax({
+            url: site_js.ajax_url,
+            type: 'post',
+            data: {
+                'action': 'delete_account_email'
+            }, success: function( data ) {
+                $('#delete-request-confirmation').html('We&rsquo;re sorry to see you go! Please check your email for the confirmation link.')
+            }
+        });
+    });
+
+    if($('.reminders').length) {
+        var timer = 0;
+        $('.reminders').find('.reminder').each(function() {
+            var $this = $(this);
+            setTimeout(function() {
+                $this.addClass('showing-reminder');
+            }, timer);
+            timer += 100;
+            
+        });
+    }
 
 })(jQuery); // Fully reference jQuery after this point.

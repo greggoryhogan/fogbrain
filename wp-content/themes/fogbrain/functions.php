@@ -18,13 +18,16 @@ function register_bhfe_scripts() {
 	if(get_post_type() == 'page' && !is_front_page() && !is_page('login') && !is_page('profile')) {
 		wp_enqueue_style('fogbrain-flexible-content');
 	}
-	wp_enqueue_style('bootstrap-grid','https://cdn.jsdelivr.net/gh/dmhendricks/bootstrap-grid-css@4.1.3/dist/css/bootstrap-grid.min.css', false, '1.0', 'all');
+	wp_enqueue_style('bootstrap-grid',$bhfe_dir.'/css/bootstrap-grid.min.css', false, '1.0', 'all');
 
 	/*wp_register_script('input-mask', 'https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/3.3.4/jquery.inputmask.bundle.min.js', array('jquery'),'',true);
 	if(is_page('login')) {
 		wp_enqueue_script('input-mask');
 	}*/
-	wp_enqueue_style('jquery-ui-autocomplete','https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css',false,'1.13.2','all');
+	wp_register_style('jquery-ui-autocomplete','https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css',false,'1.13.2','all');
+	if(get_post_type() == 'brain') {
+		wp_enqueue_style('jquery-ui-autocomplete');
+	}
 	wp_enqueue_script( 'jquery-ui-sortable' );
 	wp_enqueue_script('jquery-ui-core');
 	// Enqueue jQuery UI autocomplete
@@ -39,10 +42,23 @@ function register_bhfe_scripts() {
 		'logout_link' => wp_logout_url('/login')
 	));
 	
-	wp_enqueue_style('fog-fonts','https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+	wp_enqueue_style('fog-fonts','https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600;1,700;1,800&display=swap');
 	
+	wp_dequeue_style('wp-block-library');
+	//wp_deregister_script( 'wp-polyfill' );
+  	//wp_deregister_script( 'regenerator-runtime' );
 }
 add_action( 'wp_enqueue_scripts', 'register_bhfe_scripts' );
+
+function remove_jquery_migrate( $scripts ) {
+	if ( ! is_admin() && isset( $scripts->registered['jquery'] ) ) {
+			$script = $scripts->registered['jquery'];
+			if ( $script->deps ) { 
+				$script->deps = array_diff( $script->deps, array( 'jquery-migrate' ) );
+		}
+	}
+}
+add_action( 'wp_default_scripts', 'remove_jquery_migrate' );
 
 add_action('wp_head','bhfe_early_head_customization');
 function bhfe_early_head_customization() { 
@@ -54,10 +70,6 @@ function bhfe_early_head_customization() {
 	<meta name="apple-mobile-web-app-title" content="Fog Brain">
 	<meta name="theme-color" content="#008080" />
 	<link rel='shortcut icon' href="<?php echo THEME_URI; ?>/img/fav.png" />
-	<?php 
-	if ( is_singular( 'brain' ) ) {
-        echo '<meta name="robots" content="noindex, nofollow">';
-    } ?>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
@@ -217,6 +229,29 @@ add_action('template_redirect','check_login_page_for_user');
 function check_login_page_for_user() {
 	global $fogbrain_user_id, $post, $wp;
 	if(is_page('login')) {
+		if(isset($_GET['delete-account'])) {
+			if(isset($_GET['email']) && isset($_GET['wpnonce'])) {
+				$email = sanitize_text_field(urldecode($_GET['email']));
+				$nonce = sanitize_text_field($_GET['wpnonce']);
+				if(wp_verify_nonce( $nonce, 'email_'.$email )) {
+					//required for deleting user
+					require_once(ABSPATH.'wp-admin/includes/user.php');
+					$user = get_user_by('email',$email);
+					//get their page and delete it
+					$profile_page_id = get_user_meta($user->ID,'user_profile_page',true);
+					wp_delete_post($profile_page_id, true);
+					//log them out
+					$sessions = WP_Session_Tokens::get_instance($user->ID);
+					$sessions->destroy_all();
+					//delete user
+					wp_delete_user($user->ID);
+					wp_redirect( get_bloginfo('url').'/login/?account-deleted=1');
+					exit;
+				} else {
+					wp_nonce_ays('Your deletion code was invalid.');
+				}
+			} 
+		}
 		if($fogbrain_user_id > 0) {
 			$query = new WP_Query(array(
 				'post_type' => 'brain',
@@ -240,24 +275,27 @@ function check_login_page_for_user() {
 	} else if(is_page('profile')) {
 		if($fogbrain_user_id == 0) {
 			wp_redirect( get_bloginfo('url').'/login/?logged-out=profile');
+			exit;
 		}	
 	} else if(is_search()) {
 		wp_redirect(get_bloginfo('url'));	
 		exit;
-	} else if($post->post_type == 'brain') {
-		$login_redirect = get_bloginfo('url').'/login?access-error=';
-		//redirect users from viewing other peoples pages
-	 	if($post->post_author != $fogbrain_user_id) {
-			if(isset($wp->query_vars['share'])) {
-				$share_code = $wp->query_vars['share'];
-				$saved_share_code = get_post_meta($post->ID,'share_code',true);
-				if($share_code != $saved_share_code) {
-					wp_redirect($login_redirect.'invalid-code');	
+	} else if(isset($post)) {
+		if($post->post_type == 'brain') {
+			$login_redirect = get_bloginfo('url').'/login?access-error=';
+			//redirect users from viewing other peoples pages
+			if($post->post_author != $fogbrain_user_id) {
+				if(isset($wp->query_vars['share'])) {
+					$share_code = $wp->query_vars['share'];
+					$saved_share_code = get_post_meta($post->ID,'share_code',true);
+					if($share_code != $saved_share_code) {
+						wp_redirect($login_redirect.'invalid-code');	
+					}
+				} else {
+					wp_redirect($login_redirect.'private');	
 				}
-			} else {
-				wp_redirect($login_redirect.'private');	
+				
 			}
-			
 		}
 	}
 }
@@ -503,7 +541,7 @@ function save_profile_callback() {
 	$args = array(
 		'ID'           => $profile_page_id,
 		'post_name' => $profile_url,
-		'post_title' => "$display_name's Foggy Brain",
+		'post_title' => "u/$profile_url",
 	);
 	wp_update_post( $args );
 	update_post_meta($profile_page_id,'share_code',$share_code);
@@ -600,6 +638,11 @@ function check_for_email_recovery() {
 }
 
 function fog_error_notifications() {
+	if(isset($_GET['account-deleted'])) {
+		echo '<div class="col-12 col-md-8">';
+			echo '<p class="error-notice">Your account has been deleted.<span class="close-notification"></span></p>';
+		echo '</div>';
+	}
 	if(isset($_GET['login-action'])) {
 		$action = sanitize_text_field($_GET['login-action']);
 		if($action == 'returning-user') {
@@ -616,7 +659,7 @@ function fog_error_notifications() {
 			if($error == 'invalid-code') {
 				$message .= ' If you were given a share code, check with the user to confirm their profile is set to public.';
 			} else {
-				$message .= ' If you were trying to access your own page, please log in below.';
+				//$message .= ' If you were trying to access your own page, please log in below.';
 			}
 			echo '<p class="error-notice">'.$message.'<span class="close-notification"></span></p>';
 		echo '</div>';
@@ -642,6 +685,7 @@ function fog_error_notifications() {
 		if($error == 'successful') {
 			echo '<div class="col-12 col-md-8">';
 				echo '<p class="error-notice">Registration successful! Any time you need to log in again, just use the email in your account. You can configure your account settings on your <a href="/profile" title="profile">profile page</a>.<span class="close-notification"></span></p>';
+				
 			echo '</div>';
 		}
 	} else if(isset($_GET['profile'])) {
@@ -840,11 +884,16 @@ function add_gpt_reminder_callback() {
 			'tag' => $tag
 		);
 
+		$user_timezone = get_user_meta($current_user->ID,'timezone',true);
+		if($user_timezone == '') {
+			$user_timezone = 'America/New_York';
+		}
+
 		$saved_reminders[] = $new_reminder;
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
 		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
 		//$reminder .= '<pre>'.print_r($new_reminder,true).'</pre>';
-		$reminder .= process_gpt_reminder($new_reminder, 'null', true);
+		$reminder .= process_gpt_reminder($new_reminder, $user_timezone, true);
 		$reminder .= '</div><div class="delete"></div></div>';
 		echo json_encode(
 			array(
@@ -873,7 +922,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	}
 	$tags = array();
 	foreach($reminders as $index => $reminder) {
-		if($reminder['tag'] != '') {
+		if($reminder['tag'] != '' && ($reminder['public'] == 'true' || $is_my_page)) {
 			if(!in_array($reminder['tag'],$tags)) {
 				$tags[] = $reminder['tag'];
 			}
@@ -965,7 +1014,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					}
 				} else {
 					$phrase = rtrim($reminder['phrase'], '.');
-					if($reminder['tense'] == 'present perfect') {
+					if($reminder['tense'] == 'present perfect' || $reminder['tense'] == 'present perfect continuous') {
 						$phrase = rtrim($phrase, 'since');	
 					}
 					$return .= "$phrase";
@@ -1345,4 +1394,24 @@ function featherIcon($icon,$classes = NULL, $size = NULL, $color = NULL, $backgr
     $icon_html .= ' role="presentation">'.$icon_url.'</span>';
     return $icon_html;
 } 
+
+
+add_action( 'wp_ajax_nopriv_delete_account_email', 'delete_account_email_callback' );
+add_action( 'wp_ajax_delete_account_email', 'delete_account_email_callback' );
+function delete_account_email_callback() {
+	global $current_user;
+	$email = $current_user->user_email;
+	$nonce = wp_create_nonce( 'email_'.$email );
+	$delete_url = get_bloginfo('url').'/login?delete-account=1&email='.urlencode($email).'&wpnonce='.$nonce;
+	//$delete_url = wp_nonce_url( $deletion_url, 'email_'.$email );
+	
+	$message = '<p style="text-align: center;">Someone requested your Fog Brain account be deleted.</p>';
+	$message .= '<p style="text-align: center;">If you did not request this action, you can ignore this email. If you would like to continue deleting your account, click the link below.</p>';
+	$message .= '<p style="text-align: center;">All of your reminders and personal data will be permanently deleted, immediately. Please save any data you want to keep before clicking the link; the data is not recoverable.</p>';
+	$message .= '<p style="text-align: center;"><a href="'.$delete_url.'">'.$delete_url.'</a></p>';
+	$message .= '<p style="text-align: center;">Thank you for using Fog Brain</p>';
+	wp_mail($email,'Fog Brain account deletion',$message);
+
+	wp_die();
+}
 ?>
