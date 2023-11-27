@@ -545,6 +545,8 @@
         $(this).autocomplete('search', $(this).val())
     });
 
-    
+    $('.accordion__item .accordion__title').on('click',function() {
+        $(this).parent().toggleClass('is-open').toggleClass('is-closed');
+    });
 
 })(jQuery); // Fully reference jQuery after this point.

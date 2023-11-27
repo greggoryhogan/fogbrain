@@ -14,6 +14,10 @@ function register_bhfe_scripts() {
 	$bhfe_dir = BHFE_URL.'/wp-content/themes/fogbrain';
 	//Main Stylesheet
 	wp_enqueue_style( 'fogbrain-main', $bhfe_dir.'/css/main.css', false, $version, 'all' );
+	wp_register_style( 'fogbrain-flexible-content', $bhfe_dir.'/css/flexible-content.css', false, $version, 'all' );
+	if(get_post_type() == 'page' && !is_front_page() && !is_page('login') && !is_page('profile')) {
+		wp_enqueue_style('fogbrain-flexible-content');
+	}
 	wp_enqueue_style('bootstrap-grid','https://cdn.jsdelivr.net/gh/dmhendricks/bootstrap-grid-css@4.1.3/dist/css/bootstrap-grid.min.css', false, '1.0', 'all');
 
 	/*wp_register_script('input-mask', 'https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/3.3.4/jquery.inputmask.bundle.min.js', array('jquery'),'',true);
@@ -237,6 +241,9 @@ function check_login_page_for_user() {
 		if($fogbrain_user_id == 0) {
 			wp_redirect( get_bloginfo('url').'/login/?logged-out=profile');
 		}	
+	} else if(is_search()) {
+		wp_redirect(get_bloginfo('url'));	
+		exit;
 	} else if($post->post_type == 'brain') {
 		$login_redirect = get_bloginfo('url').'/login?access-error=';
 		//redirect users from viewing other peoples pages
@@ -1084,4 +1091,258 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 	return $return;
 }
 
+/**
+ * ACF Save JSON Dir
+ */
+add_filter('acf/settings/save_json', 'bhfe_acf_save_point');
+function bhfe_acf_save_point( $path ) {
+    $path = THEME_DIR . '/acf-json';
+    return $path;
+}
+/**
+ * ACF Load JSON Dir
+ */
+add_filter('acf/settings/load_json', 'bhfe_acf_load_point');
+function bhfe_acf_load_point( $paths ) {
+    // remove original path (optional)
+    unset($paths[0]);
+    $paths[] = THEME_DIR . '/acf-json';
+    return $paths;
+}
+
+
+/**
+ * Add hook to add shortcodes to the content during save. This is a hack to make the has_shortcode($post->content) work with other plugins
+ */
+add_action('save_post','append_to_bhfe_post_content');
+function append_to_bhfe_post_content($post_id){
+    global $post; 
+    if(function_exists('get_field')) {
+        $field_name = 'flexible_content';
+        //iterate each flexible section
+        if ( have_rows( $field_name, $post_id ) ) {
+            $content = '';
+            //$rowct = 0;
+            while(have_rows( $field_name, $post_id )) {
+                the_row();	
+                //++$rowct;
+                $row_layout = get_row_layout();
+                if($row_layout == 'heading') { // && $rowct > 1
+                    $heading = get_sub_field('heading');
+                    $tag = get_sub_field('tag');
+                    $content .= '<'.$tag.'>'.$heading.'</'.$tag.'>';
+                }
+                if($row_layout == 'list') {
+                    $list_ordering = get_sub_field('list_ordering');
+                    if( have_rows('list_items') ):
+                        $content .= '<'.$list_ordering.'>';
+                            while ( have_rows('list_items') ) : the_row();
+                                $content .= '<li>';
+                                    $label = get_sub_field('label');
+                                    $text = get_sub_field('text');
+                                    if($label != '') {
+                                        $content .= $label.' ';
+                                    }
+                                    if($text != '') {
+                                        $content .= $text;
+                                    }
+                                $content .= '</li>';
+                            endwhile;
+                        $content .= '</'.$list_ordering.'>';
+                    
+                    endif;
+                }
+                if($row_layout == 'heading-wysiwyg-repeater') {
+                    if(have_rows('sections')) {
+                        
+                        while(have_rows('sections')) {
+                            the_row();
+                            $heading = get_sub_field( 'heading' );
+                            $tag = get_sub_field('tag');
+                            $contents = get_sub_field('content'); 
+                            
+                            if($heading != '') {
+                                $content .= '<'.$tag.'>'.$heading.'</'.$tag.'>';
+                            }
+                            if($contents != '') {
+                                $content .= $contents;
+                            }
+                            
+                        }
+                        
+                    }
+                }
+                if($row_layout == 'two_column_content' || $row_layout == 'three_column_content') {
+                    $heading_type = get_sub_field('heading_type');
+                    $content .= '<'.$heading_type.'>'.get_sub_field( 'heading' ).'</'.$heading_type.'>';
+                    $content .= get_sub_field('content');
+                    $content .= '<'.$heading_type.'>'.get_sub_field( 'heading_2' ).'</'.$heading_type.'>';
+                    $content .= get_sub_field('content_2');
+                    if($row_layout == 'three_column_content') {
+                        $content .= '<'.$heading_type.'>'.get_sub_field( 'heading_3' ).'</'.$heading_type.'>';
+                        $content .= get_sub_field('content_3');
+                    }
+                }
+                if($row_layout == 'wysiwyg') {
+                    $content .= get_sub_field('content');
+                }
+                if($row_layout == 'shortcode') {
+                    $content .= get_sub_field('shortcode');
+                }
+            }
+            if($content == '') {
+                $content = '<!--'.print_r(get_post_meta($post_id),true).'-->';
+            }
+            $post = get_post( $post_id );
+            $post->post_content = $content;
+            //Add excerpt if it isn't set
+            /*if(!has_excerpt($post_id)) {
+                $post->post_excerpt = substr(strip_tags($content), 0, 100);
+            }*/
+            remove_action('save_post','append_to_bhfe_post_content');
+            wp_update_post( $post );
+            add_action('save_post','append_to_bhfe_post_content');
+        }
+    }    
+}
+
+/** Filter input content */
+function bhfe_content_filters($content,$span = true) {
+    if(!$span) {
+        return do_shortcode(str_replace('^',' ',$content));
+    } else {
+        return do_shortcode('<span class="br">'.str_replace('^','</span><span class="br">',$content) .'</span>');
+    }
+}
+add_filter('bhfe_content','bhfe_content_filters');
+
+/**
+ * Simple shortcode to add spacing to inputs / text areas
+ */
+add_shortcode('space','space_shortcode');
+function space_shortcode($atts) {
+    $atts = shortcode_atts( array(
+        'height' => '1rem',
+        'display' => '',
+    ), $atts );
+    return '<span class="fog-spacer '.$atts['display'].'" style="height:'.$atts['height'].'"></span>';
+}
+
+add_filter('the_content','bhfe_content_filter',99,1);
+function bhfe_content_filter($content) {
+    global $post;
+    ob_start();
+    if(function_exists('get_field')) {
+        $field_name = 'flexible_content';
+        $flexible_post_id = get_the_ID();
+        //iterate each flexible section
+        if ( have_rows( $field_name, $flexible_post_id ) ) {			
+            $band = 0;
+            while ( have_rows( $field_name, $flexible_post_id ) ) : the_row();	
+                ++$band;
+                $row_layout = get_row_layout();
+                $block_color_scheme = get_sub_field('color_scheme');
+                $button_style = get_sub_field('button_style');
+                $first_button_color = get_sub_field('first_button_color');
+                $text_alignment = get_sub_field('text_alignment');
+                $band_id = get_sub_field('band_id');
+                echo '<section id="bhfe-content-band-'.$band.'" class="bhfe-section '.$row_layout.' block-style-'.$block_color_scheme.' button-style-'.$button_style.' button-alternating-'.$first_button_color.' text-alignment-'.$text_alignment.'">';
+                        
+					if($band_id != '') {
+						echo '<div id="'.$band_id.'" tabindex="-1"></div>';
+					}
+					$filename = THEME_DIR.'/templates/flexible-content/' . get_row_layout().'.php';
+					if(file_exists($filename)) {
+						include($filename);
+					}   
+                echo '</section>';
+            endwhile;                
+        } else {
+            $post_type = get_post_type();
+            echo '<section class="'.$post_type.'">';
+                echo '<div class="container container__normal block-style-dark text-alignment-left">';
+                    echo '<div class="container-content">';
+                        echo $content;
+                    echo '</div>';
+                echo '</div>';
+            echo '</section>';
+        }
+    } else {
+        echo '<section class="default">';
+            echo '<div class="container container__normal block-style-dark text-alignment-left">';
+                echo '<div class="container-content">';
+                    echo $content;
+                echo '</div>';
+            echo '</div>';
+        echo '</section>';
+    }
+    return ob_get_clean();
+}
+
+/**
+ * Add flexible content band paddings to css in header
+ */
+add_action('wp_head','bhfe_acf_header_css');
+function bhfe_acf_header_css() {
+	$flexible_post_types = array('post','page','product');
+	$post_type = get_post_type();
+	if(in_array($post_type,$flexible_post_types) && function_exists('get_field')) {
+		$acf_field_name = 'flexible_content';
+		$acf_post_id = get_the_ID();
+		//iterate each flexible section
+		if ( have_rows( $acf_field_name, $acf_post_id ) ) :			
+			$band = 0;
+			$desktop_css = '';
+			$tablet_css = '';
+			$mobile_css = '';
+			$globals = '';
+			while ( have_rows( $acf_field_name, $acf_post_id ) ) : the_row();	
+				++$band;
+				$row_layout = get_row_layout();
+                
+				//Padding
+				if(get_sub_field('desktop_padding') != '2rem 0rem')
+					$desktop_css .= '#wise-content-band-'.$band.'{padding:'.get_sub_field('desktop_padding').';}';
+				if(get_sub_field('tablet_padding') != '2rem 0rem')
+					$tablet_css .= '#wise-content-band-'.$band.'{padding:'.get_sub_field('tablet_padding').';}';
+				if(get_sub_field('mobile_padding') != '2rem 0rem')
+					$mobile_css .= '#wise-content-band-'.$band.'{padding:'.get_sub_field('mobile_padding').';}';
+			
+                //Margins
+				if(get_sub_field('desktop_margin') != '0rem')
+					$desktop_css .= '#wise-content-band-'.$band.'{margin:'.get_sub_field('desktop_margin').';}';
+				if(get_sub_field('tablet_margin') != '0rem')
+                	$tablet_css .= '#wise-content-band-'.$band.'{margin:'.get_sub_field('tablet_margin').';}';
+				if(get_sub_field('mobile_margin') != '0rem')
+                	$mobile_css .= '#wise-content-band-'.$band.'{margin:'.get_sub_field('mobile_margin').';}';
+			endwhile;
+			?>
+			<style type="text/css">
+				<?php echo $globals; ?>
+				@media all and (min-width: 73rem) {<?php echo $desktop_css; ?>}
+				@media all and (max-width: 73rem) and (min-width: 48rem) { <?php echo $tablet_css; ?> } 
+				@media all and (max-width: 48rem) { <?php echo $mobile_css; ?> }
+			</style><?php 
+		endif;
+	}
+}
+
+function featherIcon($icon,$classes = NULL, $size = NULL, $color = NULL, $background = NULL) {
+    $extras = '';
+    if($color != null) {
+        $extras .= 'color: '.$color.';';
+    }
+    if($background != null) {
+        $extras .= 'background-color: '.$background.';';
+    }
+    ob_start(); 
+    include('includes/feather/'.$icon.'.svg');
+    $icon_url = ob_get_clean();
+    $icon_html = '<span class="feather-icon '.$classes.'"';
+    if($size) {
+        $icon_html .= ' style="width:'.$size.'px;height:'.$size.'px;padding-bottom:0;font-size:'.$size.'px;'.$extras.'"';
+    }
+    $icon_html .= ' role="presentation">'.$icon_url.'</span>';
+    return $icon_html;
+} 
 ?>

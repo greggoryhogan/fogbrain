@@ -1,0 +1,80 @@
+$primary: #006868;
+$secondary: #0b2228;
+$black: #000;
+$gray: #a8a8a8;
+$dark-gray: #333333;
+$white: #fff;
+$gutter: 1rem;
+$mobile: 767px;
+$tablet: 992px;
+$font-bold: 600;
+$border-radius-lg: 50px;
+$border-radius-xl: 50px;
+$blue: #00213a;
+
+
+/** DIMENSIONS **/
+$gutter: 1rem;
+$gutter-sm: .5rem;
+$wrapper-xxs: 34rem; /*975px * .75*/
+$wrapper-xs: 54rem; /*1130*.75*/
+$wrapper-sm: 58rem; /*1500*.75*/
+$wrapper: 65rem;/*1645*.75*/
+$wrapper-lg: 85rem;/*2170*.75*/
+$wrapper-xl: calc(100vw - #{$gutter * 2});
+$desktop: 96rem;
+$tablet: 68rem;
+$mobile: 48rem;
+$mobile-sm: 35rem;
+$border-radius-sm: 5px;
+$border-radius-md: 13px;
+$border-radius-lg: 25px;
+$border-radius-xl: 50px;
+$font-normal: 300;
+$font-medium: 400;
+$font-bold: 500;
+$font-extra-bold: 600;
+
+/** CARRYOVER **/
+$scaling: .75;
+$bgscale: 1.1;
+$orange: #f16f22;
+$logo-blue: #0a6080;
+$dark-orange: #ef661e;
+$light-orange: #fc9c06;
+$light-gray: #595959;
+$light-light-gray: #f1f1f1;
+$traditional-gray: #333;
+$nav-gray: #4d4d4d;
+$gray-bg: #f7f7f7;
+$green: #67a092;
+$light-green: #64babe;
+$dark-green: #367477;
+$yellow: #FDCD06;
+
+$box-shadow: 0px 33px 33px rgba(0,0,0,.16);
+$box-shadow-hover: 0px 33px 33px rgba(0,0,0,.35);
+$img-box-shadow: 0px 53px 66px rgba(0,0,0,.25);
+$podcast-box-shadow: 0px 33px 33px rgba(0,0,0,.20);
+$podcast-box-shadow-hover: 0px 23px 33px rgba(0,0,0,.6);
+$post-cta-box-shadow: 0px 0 63px rgba(0,0,0,0.16);
+$dark-blue: #055572;
+$slide-button: #9F9F9F;
+$gallery-eyebrow:#C3C3C3;
+$stat-gray: #4e4e4e;
+$stat-separator: #b3b3b3;
+$blog-nav: #c7c7c7;
+$blog-nav-hover: #2d2d2d;
+$spaceamounts: (1,2,3,4,5); // Adjust this to include the pixel amounts you need.
+$sides: (top, bottom, left, right); // Leave this variable alone
+@each $space in $spaceamounts {
+  @each $side in $sides {
+    .m#{str-slice($side, 0, 1)}-#{$space} {
+      margin-#{$side}: #{$space * $gutter-sm} !important;
+    }
+  
+    .p#{str-slice($side, 0, 1)}-#{$space} {
+      padding-#{$side}: #{$space * $gutter-sm} !important;
+    }
+  }
+}
