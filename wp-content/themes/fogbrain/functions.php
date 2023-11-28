@@ -913,6 +913,34 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	if($user_timezone == '') {
 		$user_timezone = 'America/New_York';
 	}
+	$timezone  = new DateTimeZone($user_timezone);
+
+	//check if future event has passed and update reminders if necessary
+	if($author_id != null) {
+		$profile_page_id = get_user_meta($author_id,'user_profile_page',true);
+		$needs_update = false;
+		foreach($reminders as $index => $reminder) {
+			if($reminder['tense'] == 'future') {
+				$today = new DateTime("today");
+				$reminder_date = str_replace(',','',$reminder['date']);
+				$normalized_date = date('Y-m-d', strtotime($reminder_date));
+				$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
+				$reminder_time = $reminder_date_time->setTime( 0, 0, 0 ); // set time part to midnight, in order to prevent partial comparison
+				$diff = $today->diff( $reminder_time );
+				$diffDays = (integer)$diff->format( "%R%a" );
+				if($diffDays < 0) {
+					//event is now in the past, update it
+					$reminder['phrase'] = str_replace('is','was',$reminder['phrase']);
+					$needs_update = true;
+					$reminders["$index"] = $reminder;
+				}
+			}
+		}
+		if($needs_update) {
+			update_post_meta($profile_page_id,'user_reminders',$reminders);
+		}
+	}
+
 	$reminders_html = '';
 	$is_my_page = true;
 	if($author_id != null) {
@@ -951,7 +979,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 					$reminders_html .= '<div class="handle"></div>';
 				}
 				$reminders_html .= '<div class="reminder-content">';
-					$reminders_html .= process_gpt_reminder($reminder, $user_timezone, $is_my_page);
+					$reminders_html .= process_gpt_reminder($reminder, $timezone, $is_my_page);
 				$reminders_html .= '</div>';
 				if($is_my_page) {
 					$reminders_html .= '<div class="delete"></div>';
@@ -979,14 +1007,15 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 	$return .= '<div class="reminder-data">';
 		$reminder_date = str_replace(',','',$reminder['date']);
 		if(validDate($reminder_date)) {
-			//$return .= '<pre>'.print_r($reminder,true).'</pre>';
 			if($timezone === false) {
-				$timezone = 'America/New_York';
+				$timezone  = new DateTimeZone('America/New_York');
 			}
-			$tz  = new DateTimeZone($timezone);
-			$normalized_date = date('Y-m-d', strtotime($reminder_date));
-			$time_calulation = DateTime::createFromFormat('Y-m-d', $normalized_date, $tz)->diff(new DateTime('now', $tz));
 			
+			$now = new DateTime('now', $timezone);
+			$normalized_date = date('Y-m-d', strtotime($reminder_date));
+			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
+			$time_calulation = $reminder_date_time->diff($now);
+			//$return .= '<pre>'.print_r($time_calulation,true).'</pre>';
 			if($time_calulation->y == 0) {
 				if($time_calulation->m  > 0) {
 					if($time_calulation->m == 1) {
@@ -995,10 +1024,20 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$time = "$time_calulation->m months";
 					}
 				} else {
-					$time = "$time_calulation->d days";
+					if($time_calulation->d == 0) {
+						$time = "today!";
+					} else if($time_calulation->d == 1) {
+						$time = "$time_calulation->d day";
+					} else {
+						$time = "$time_calulation->d days";
+					}
 				}
 			} else {
-				$time = "$time_calulation->y years";
+				if($time_calulation->y == 1) {
+					$time = "$time_calulation->y year";
+				} else {
+					$time = "$time_calulation->y years";
+				}
 			}
 			$return .= '<div class="phrase">';
 				if($reminder['is_birthday']) {
@@ -1022,7 +1061,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$return .= ',';
 					}
 					
-					if($reminder['tense'] == 'future') {
+					if($reminder['tense'] == 'future' && $time != 'today!') {
 						$return .= " in";
 					}
 					$return .= " <span>$time";
