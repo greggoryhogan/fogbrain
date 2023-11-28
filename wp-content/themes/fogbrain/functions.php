@@ -888,12 +888,12 @@ function add_gpt_reminder_callback() {
 		if($user_timezone == '') {
 			$user_timezone = 'America/New_York';
 		}
-
+		$timezone  = new DateTimeZone($user_timezone);
 		$saved_reminders[] = $new_reminder;
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
 		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
 		//$reminder .= '<pre>'.print_r($new_reminder,true).'</pre>';
-		$reminder .= process_gpt_reminder($new_reminder, $user_timezone, true);
+		$reminder .= process_gpt_reminder($new_reminder, $timezone, true);
 		$reminder .= '</div><div class="delete"></div></div>';
 		echo json_encode(
 			array(
@@ -950,7 +950,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	}
 	$tags = array();
 	foreach($reminders as $index => $reminder) {
-		if($reminder['tag'] != '' && ($reminder['public'] == 'true' || $is_my_page)) {
+		if($reminder['tag'] != '' && $reminder['tag'] != 'None' && ($reminder['public'] == 'true' || $is_my_page)) {
 			if(!in_array($reminder['tag'],$tags)) {
 				$tags[] = $reminder['tag'];
 			}
@@ -1103,7 +1103,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				$return .= '<div class="tags">';
 					if($reminder['tag']) {
 						$val = $reminder['tag'];
-						$placeholder = '';
+						$placeholder = ' '.strtolower(str_replace(' ','-',str_replace(' & ','-',$reminder['tag'])));
 					} else {
 						$val = '';
 						$placeholder = 'placeholder';
@@ -1111,7 +1111,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$return .= '<input type="text" value="'.$reminder['tag'].'" placeholder="Category" class="tag existing '.$placeholder.'" />';
 					
 				$return .= '</div>';
-				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
+				$return .= '<div class="note">'.$note.'</div>';
 				$public = $reminder['public'];
 				if($public == 'false') {
 					$return .= '<div class="public-notice">&nbsp;&dash;&nbsp;<strong>PRIVATE</strong></div>';
@@ -1134,7 +1134,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				$return .= '<div class="tags">';
 					if($reminder['tag']) {
 						$val = $reminder['tag'];
-						$placeholder = '';
+						$placeholder = ' '.strtolower(str_replace(' ','-',str_replace(' & ','-',$reminder['tag'])));
 					} else {
 						$val = '';
 						$placeholder = 'placeholder';
@@ -1153,12 +1153,16 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$placeholder = '';
 				} else {
 					$note = '';
-					$placeholder = 'placeholder';
+					$placeholder = '';
 				}
 				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
 				$public = $reminder['public'];
 				if($public == 'false') {
-					$return .= '<div class="public-notice">&nbsp;&dash;&nbsp;<strong>PRIVATE</strong></div>';
+					$return .= '<div class="public-notice">';
+					if($note != '') {
+						$return .= '&nbsp;&dash;&nbsp;';
+					}
+					$return .= '<strong>PRIVATE</strong></div>';
 				}
 			$return .= '</div>';
 			

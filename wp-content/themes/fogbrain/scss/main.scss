@@ -473,8 +473,10 @@ footer {
         list-style: none;
         margin: 0;
         padding: 0;
-        gap: 10px;
+        gap: 16px 20px;
         justify-content: center;
+        flex-wrap: wrap;
+        padding: 0 16px 3px;
     }
     a {
         &:hover {
@@ -509,6 +511,9 @@ footer {
         }
         .detail {
             font-size: 16px;
+            &.empty {
+                display: none;
+            }
             div {
                 display: inline-block;
             }
@@ -589,9 +594,6 @@ footer {
             border-radius: 5px;
             border: none;
             display: none;
-            &:focus {
-                outline: none;
-            }
             &.placeholder {
                 display: none;
                 min-width: 20px;
@@ -609,9 +611,6 @@ footer {
             color: inherit;
             font-family: inherit;
             font-weight: inherit;
-            &:focus {
-                outline: none;
-            }
             &.placeholder {
                 display: none;
                 min-width: 20px;
@@ -738,6 +737,11 @@ footer {
                 margin-bottom: 40px;
                 .reminder-content {
                     flex: 1;
+                }
+                .detail {
+                    &.empty {
+                        display: block;
+                    }
                 }
             }
             .handle,
@@ -901,6 +905,10 @@ footer {
     }
 }*/
 .single-brain {
+    .noreminders {
+        font-size: 18px;
+        color: rgba(255,255,255,0.7);
+    }
     .share-link {
         color: #fff;
         font-size: 18px;
@@ -934,11 +942,6 @@ footer {
         transition: .5s max-height;
         p {
             margin-bottom: 10px;
-        }
-        input {
-            &:focus {
-                outline: none!important;
-            }
         }
         &.is-active {
             max-height: 999px;
@@ -1180,4 +1183,7 @@ pre {
 .age-consent {
     font-size: 16px;
     margin-top: 30px;
+}
+.d-none {
+    display: none;
 }

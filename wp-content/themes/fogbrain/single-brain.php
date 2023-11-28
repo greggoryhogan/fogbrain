@@ -66,6 +66,7 @@
                         echo process_gpt_reminders($reminders, $author_id);
                     } ?>
                     </div>
+                    <div class="noreminders d-none">You don&rsquo;t have any reminders.</div>
                     <div class="big-link done-editing bottom-editor">Finish Editing</div>
                     <?php 
                     

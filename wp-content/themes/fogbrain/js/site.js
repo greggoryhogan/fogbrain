@@ -85,6 +85,26 @@
         }, 500);
     });
 
+    function checkForEmptyDetails() {
+        $('.reminders .reminder .detail').each(function() {
+            if($(this).find('.note').text() == '' && ($(this).find('.tag').hasClass('placeholder') || $(this).find('.tag').hasClass('none')) && $(this).text() == '') {
+                $(this).addClass('empty');
+            } else {
+                $(this).removeClass('empty');
+            }
+        });
+    }
+
+    if($('.reminders').length) {
+        if(!$('.reminders .reminder').length) {
+            $('.edit-reminders').hide();
+            $('.noreminders').show();
+        } else {
+            checkForEmptyDetails();
+        }
+    }
+
+    
     $(document).on('submit','#login-code',function(e) {
         e.preventDefault();
         $('.action-code .action-errors').html('');
@@ -352,16 +372,24 @@
         if($('.reminder-form').hasClass('is-active')) {
             $('.reminder-form').removeClass('is-active');
             $(this).text('Add Reminder');
-            $('.edit-reminders').show();
+            
             
             if($( '#tag' ).autocomplete( "instance" ) !== undefined) {
                 $( '#tag' ).autocomplete( "destroy" );
+            }
+            if(!$('.reminders .reminder').length) {
+                $('.noreminders').show();
+            } else {
+                $('.edit-reminders').show();
             }
             //window.location.href = window.location.href;
         } else {
             $('.reminder-form').addClass('is-active');
             $('.edit-reminders').hide();
             $(this).text('Cancel');
+            if(!$('.reminders .reminder').length) {
+                $('.noreminders').hide();
+            }
         }
     });
 
@@ -376,8 +404,12 @@
 
     var sortList = '';
     $(document).on('click','.edit-reminders',function() {
-        $('.hidden-reminder').removeClass('hidden-reminder');
+        $('.hidden-reminder').removeClass('hidden-reminder').addClass('showing-reminder');
+        $('.tag-btn.is-active').removeClass('is-active');
         $( '.reminder-summary' ).addClass('is-editing');
+        if($('.reminders .reminder').length < 5) {
+            $('.done-editing.bottom-editor').hide();
+        }
         $( '.reminder-summary .reminders .note').attr('contenteditable',true);
         $( '.reminder-summary .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
             sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
@@ -414,7 +446,11 @@
                     $(this).addClass('showing-reminder');
                 });
                 $( '.reminder-summary .reminders .note').attr('contenteditable',false);
-
+                if(!$('.reminders .reminder').length) {
+                    $('.noreminders').show();
+                } else {
+                    checkForEmptyDetails();
+                }
                 //process_gpt_reminders
                 
             }
@@ -463,8 +499,10 @@
                         $('#prompt').val('')
                         $('#note').val('');
                         $('#tag').val('');
+                        $('.noreminders').hide();
                         $('.reminders').append(response.reminder);
                         $('.reminders .reminder:last-of-type').addClass('showing-reminder');
+                        checkForEmptyDetails();
                     }
                 }
             });
@@ -502,10 +540,38 @@
         "Pets",
         "Special Events",
         "Travel",
+        "None"
       ];
     //Add exams to cpt
     //var categorySelect = $('.tag');
     $('body').on('click', '.tag', function () {
+        if ($(this).hasClass('ui-autocomplete-input')) {
+            $(this).autocomplete('destroy')
+        }
+        $(this).autocomplete({
+            source: availableTags,
+            minLength: 0,
+            position: {
+                my: "left+0 top-3",
+            },
+            classes: {
+                "ui-autocomplete": 'existing-reminder-select',
+            },
+            select: function(event, ui) {
+                // Clear the input field
+                $(this).val( ui.item.value );
+                if ($(this).hasClass('ui-autocomplete-input')) {
+                    $(this).autocomplete('destroy')
+                }
+                return false;
+            }
+        });
+        $(this).val('');
+        $(this).autocomplete('search', $(this).val())
+    }).on('focus', '.tag', function () {
+        if ($(this).hasClass('ui-autocomplete-input')) {
+            $(this).autocomplete('destroy')
+        }
         $(this).autocomplete({
             source: availableTags,
             minLength: 0,
@@ -529,6 +595,9 @@
     });
     
     $('body').on('click', '#tag', function () {
+        if ($(this).hasClass('ui-autocomplete-input')) {
+            $(this).autocomplete('destroy')
+        }
         $(this).autocomplete({
             source: availableTags,
             minLength: 0,
@@ -541,7 +610,33 @@
             select: function(event, ui) {
                 // Clear the input field
                 $(this).val( ui.item.value );
-                $( '#tag' ).autocomplete( "destroy" );
+                if ($(this).hasClass('ui-autocomplete-input')) {
+                    $(this).autocomplete('destroy')
+                }
+                return false;
+            }
+        });
+        $(this).val('');
+        $(this).autocomplete('search', $(this).val())
+    }).on('focus', '#tag', function () {
+        if ($(this).hasClass('ui-autocomplete-input')) {
+            $(this).autocomplete('destroy')
+        }
+        $(this).autocomplete({
+            source: availableTags,
+            minLength: 0,
+            classes: {
+                "ui-autocomplete": 'add-reminder-select',
+            },
+            position: {
+                my: "left+0 top-10",
+            },
+            select: function(event, ui) {
+                // Clear the input field
+                $(this).val( ui.item.value );
+                if ($(this).hasClass('ui-autocomplete-input')) {
+                    $(this).autocomplete('destroy')
+                }
                 return false;
             }
         });
