@@ -34,8 +34,6 @@
                 } else if($share == '' && $author_id == $current_user->ID) {
                     echo '<div class="share-link not-active">Visibility: Hidden<a href="/profile" class="edit"></a></div>';
                 } ?>
-            </div>
-            <div class="col-12 col-md-9">
                 
                 <div class="reminder-summary">
                     <?php if($author_id == $current_user->ID) {
@@ -72,7 +70,15 @@
                     
                     ?>
                 </div>
+
+                <?php if($author_id != $current_user->ID) { ?>
+                    <div class="user-cta">
+                        <p>Want to add your own dates to remember?</p>
+                        <p><a href="/login" class="big-link homepage-conditional-login-link" title="Log in or register">Log in or register</a></p>
+                    </div>
+                <?php } ?>
             </div>
+            
         </div><?php 
     }
 } ?>

@@ -721,7 +721,7 @@ function update_reminder_categories_callback() {
 
 		echo json_encode(
 			array(
-				'reminders' => process_gpt_reminders($new_save, $current_url->ID)
+				'reminders' => process_gpt_reminders($new_save, $current_user->ID)
 			)
 		);
 		
