@@ -285,14 +285,16 @@ function check_login_page_for_user() {
 			$login_redirect = get_bloginfo('url').'/login?access-error=';
 			//redirect users from viewing other peoples pages
 			if($post->post_author != $fogbrain_user_id) {
-				if(isset($wp->query_vars['share'])) {
-					$share_code = $wp->query_vars['share'];
-					$saved_share_code = get_post_meta($post->ID,'share_code',true);
-					if($share_code != $saved_share_code) {
-						wp_redirect($login_redirect.'invalid-code');	
+				if(!current_user_can('administrator')) {
+					if(isset($wp->query_vars['share'])) {
+						$share_code = $wp->query_vars['share'];
+						$saved_share_code = get_post_meta($post->ID,'share_code',true);
+						if($share_code != $saved_share_code) {
+							wp_redirect($login_redirect.'invalid-code');	
+						}
+					} else {
+						wp_redirect($login_redirect.'private');	
 					}
-				} else {
-					wp_redirect($login_redirect.'private');	
 				}
 				
 			}
@@ -969,7 +971,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	}
 	
 	foreach($reminders as $index => $reminder) {
-		if($reminder['public'] == 'true' || $is_my_page) {
+		if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
 			//print_r($reminder);
 			if($reminder['tag'] != '') {
 				$tag = $reminder['tag'];
