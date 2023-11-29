@@ -52,7 +52,7 @@
         </div>
         <div class="col-12 col-md-9">
             <p>Want to add your own dates to remember?</p>
-            <p><a href="/login" class="big-link has-arrow homepage-conditional-login-link" title="Log in or register">Log in or register</a></p>
+            <p><a href="/login" class="big-link has-arrow homepage-conditional-login-link" title="Log in or register" onclick="gtag('event','homepage_login');">Log in or register</a></p>
         </div>
         <!--<div class="col-11 col-md-9">
             <p>It looks like you aren&rsquo;t registered or signed in. We don&rsquo;t use passwords here, you&rsquo;ll just forget that too, so enter your email below to get a passcode to login or register. P.S. We&rsquo;re new, check your spam folder.</p>

@@ -19,7 +19,7 @@
                 <p>P.S. We&rsquo;re new - check your spam folder.</p>
                 <form id="login" class="flex">
                     <input type="email" value="" placeholder="email@example.com" id="login-email" />
-                    <input type="submit" value="Send" class="big-link" />
+                    <input type="submit" value="Send" class="big-link" onclick="gtag('event','login_email');" />
                 </form>
                 <div class="action-errors"></div>
                 <p class="age-consent">By logging in to Fog Brain, you agree that you are 13 years of age or older.</p>
@@ -29,7 +29,7 @@
                 <p>P.S. We&rsquo;re new, check your spam folder.</p>
                 <form id="login-code" class="flex">
                     <input type="text" value="<?php echo $login_code; ?>" placeholder="000000" id="login-code-input" autocomplete="off" />
-                    <input type="submit" value="Enter" class="big-link" />
+                    <input type="submit" value="Enter" class="big-link" onclick="gtag('event','login_code');" />
                 </form>
                 <div class="action-errors"></div>
             </div>

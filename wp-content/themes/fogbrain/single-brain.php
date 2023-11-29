@@ -54,7 +54,7 @@
                                 echo '</div>';
                                 echo '<label><input type="checkbox" id="public" checked="checked" /> This reminder is public</label>';
                                 echo 'Public reminders will remain private if your page is not shared.<br>';
-                                echo '<input type="submit" value="Add Reminder" class="big-link has-cursor" />';
+                                echo '<input type="submit" value="Add Reminder" class="big-link has-cursor" onclick="gtag(\'event\',\'added_reminder\');" />';
                             echo '</form>';
                         echo '</div>'; 
                     } ?>
@@ -74,7 +74,7 @@
                 <?php if($author_id != $current_user->ID) { ?>
                     <div class="user-cta">
                         <p>Want to add your own dates to remember?</p>
-                        <p><a href="/login" class="big-link homepage-conditional-login-link" title="Log in or register">Log in or register</a></p>
+                        <p><a href="/login" class="big-link homepage-conditional-login-link" title="Log in or register" onclick="gtag('event','share_page_cta');">Log in or register</a></p>
                     </div>
                 <?php } ?>
             </div>

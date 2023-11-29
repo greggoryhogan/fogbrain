@@ -398,7 +398,7 @@ function check_login_code_callback() {
 				//create their post
 				$post_args = array(
 					'post_author' => $user_id,
-					'post_title' => "$username's Foggy Brain",
+					'post_title' => "$username",
 					'post_type' => 'brain',
 					'post_status' => 'publish'
 				);
@@ -961,7 +961,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 		$reminders_html .= '<div class="reminder-tags">';
 		$reminders_html .= '<div class="tag-btn" data-tag="All">All</div>';
 		foreach($tags as $tag) {
-			$reminders_html .= '<div class="tag-btn" data-tag="'.$tag.'">'.$tag.'</div>';
+			$reminders_html .= '<div class="tag-btn" data-tag="'.$tag.'" onclick="gtag(\'event\',\'filter_reminders\');">'.$tag.'</div>';
 		}
 		$reminders_html .= '</div>';
 	}

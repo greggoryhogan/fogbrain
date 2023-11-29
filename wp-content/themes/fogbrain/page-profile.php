@@ -88,7 +88,7 @@
                     ?>
                     <div class="action-error email-error"></div>
                 </div>
-                <input type="submit" id="save-profile" value="Save Profile"  class="big-link" />
+                <input type="submit" id="save-profile" value="Save Profile"  class="big-link" onclick="gtag('event','update_profile');" />
             </form>
 
             <div class="danger-zone gray-bg">
