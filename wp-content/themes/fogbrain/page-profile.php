@@ -96,7 +96,7 @@
                 <p><strong>Delete Your Account</strong><br>
                 If you&rsquo;d like to delete your account, click the link below. A confirmation will be sent to your email to delete your account.</p>
                 <p>All of your reminders and personal data will be permanently deleted, immediately. Please save any data you&rsquo;d like to keep before requesting an account deletion; the data is not recoverable.</p>
-                <div id="delete-my-account">Delete my account</div>
+                <div id="delete-my-account" onclick="gtag('event','delete_account');">Delete my account</div>
                 <div id="delete-request-confirmation"></div>
             </div>
         </div>
