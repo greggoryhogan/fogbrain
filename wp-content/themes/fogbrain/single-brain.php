@@ -45,7 +45,7 @@
                                 //https://docs.gravityforms.com/adding-a-form-to-the-theme-file/#function-call
                                 //gravity_form( 1, false, false ); //to do ajax, , false, null, true
                                 //echo '<div class="error-notice"></div>';
-                                echo '<p>Add your reminder. You can type things like &ldquo;My birthday is November 25, 1985&rdquo;, &ldquo;I have been married since 9/10/2021&rdquo; or &ldquo;We were married in Las Vegas.&rdquo; If you&rsquo;re using a date in your reminder, be sure to include at least the month and year.</p>';
+                                echo '<p>Add your reminder. You can type things like &ldquo;My birthday is November 25, 1985&rdquo;, &ldquo;I have been married since 9/10/2021&rdquo; or &ldquo;We were married in Las Vegas.&rdquo; <strong>If you&rsquo;re using a date in your reminder, be sure to include at least the month and year.</strong></p>';
                                 echo '<p>For your security, do not add sensitive information such as social security or phone numbers.</p>';
                                 echo '<input id="prompt" type="text" placeholder="Add your reminder" />';
                                 echo '<div class="flex no-wrap reminder-fields">';

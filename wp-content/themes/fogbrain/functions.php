@@ -349,7 +349,7 @@ function send_login_code_callback() {
 		$random_number = sprintf("%06d", mt_rand(1, 999999));
 		$transient_string = get_transient( 'access-code-'.$random_number );
 		if($transient_string === false) {
-			set_transient( 'access-code-'.$random_number, $email, 10 * MINUTE_IN_SECONDS );
+			set_transient( 'access-code-'.$random_number, $email, 20 * MINUTE_IN_SECONDS );
 			$message = '<p style="text-align: center;">Your login code for Fog Brain is:</p>';
 			$message .= '<h2 style="text-align: center; letter-spacing: 8px;">'.$random_number.'</h2>';
 			$message .= '<p style="text-align: center;">This code is valid for 10 minutes. Please go back to the Fog Brain login page and enter your code.</p>';
@@ -746,7 +746,7 @@ function get_chat_gpt_response($prompt) {
 
 	$prompt_instructions = "Analyze the user input ## {$prompt} ##.
 
-	Extract the date, if any, from the user input and assign it to the variable 'date.'
+	Extract a single date, if any, from the user input and assign it to the variable 'date.'. If a second date is found or the date has a span of time like 'to' or '-', assign it to the variable 'date_2'.
 
 	Determine the tense of the user input and assign it to the variable 'tense'.
 
@@ -766,6 +766,7 @@ function get_chat_gpt_response($prompt) {
 		'primary_subject' : {extracted_complete_subject},
 		'about_me' : {contains_singular_first_person_pronoun},
 		'date' : date,
+		'date_2' : date_2,
 		'phrase' : phrase,
 		'tense': tense,
 		'complement' : complement
@@ -873,6 +874,7 @@ function add_gpt_reminder_callback() {
 		}
 		$index = count($saved_reminders);
 		$date = $message['date'];
+		$date_2 = $message['date_2'];
 		$is_birthday = $message['is_birthday'];
 		$about_me = $message['about_me'];
 		$phrase = $message['phrase'];
@@ -896,13 +898,19 @@ function add_gpt_reminder_callback() {
 				//event is in the past
 				$tense = 'past';
 				$phrase = str_replace('is','was',$phrase);
-				$phrase = str_replace('will be','was',$phrase);
+				$phrase = str_replace('am','was',$phrase);
+				$phrase = str_replace('are','were',$phrase);
+				if($primary_subject == 'I') {
+					$phrase = str_replace('will be','was',$phrase);
+				} else {
+					$phrase = str_replace('will be','were',$phrase);
+				}
 			}
 		}
 
-
 		$new_reminder = array(
 			'date' => $date,
+			'date_2' => $date_2,
 			'is_birthday' => $is_birthday,
 			'primary_subject' => $primary_subject,
 			'about_me' => $about_me,
@@ -958,7 +966,13 @@ function process_gpt_reminders($reminders, $author_id = null) {
 					//event is now in the past, update it
 					$reminder['tense'] = 'past';
 					$reminder['phrase'] = str_replace('is','was',$reminder['phrase']);
-					$reminder['phrase'] = str_replace('will be','was',$reminder['phrase']);
+					$reminder['phrase'] = str_replace('am','was',$reminder['phrase']);
+					$reminder['phrase'] = str_replace('are','were',$reminder['phrase']);
+					if($reminder['primary_subject'] == 'I') {
+						$reminder['phrase'] = str_replace('will be','was',$reminder['phrase']);
+					} else {
+						$reminder['phrase'] = str_replace('will be','were',$reminder['phrase']);
+					}
 					$needs_update = true;
 					$reminders["$index"] = $reminder;
 				}
@@ -1030,17 +1044,48 @@ function validDate($date, $format = 'Y-m-d') {
 }
 
 function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false) {
-
+	$replacements = array(
+		'spring',
+		'fall',
+		'winter',
+		'summer',
+		'autumn',
+		'monsoon',
+	);
 	$return = '';
+	//$return .= print_r($reminder,true);
 	$return .= '<div class="reminder-data">';
 		$reminder_date = str_replace(',','',$reminder['date']);
+		$reminder_date = str_ireplace($replacements,'',$reminder_date);
+		$reminder_date = trim($reminder_date);
+		$date_2 = '';
+		$justyear = false;
+		if(isset($reminder['date_2'])) {
+			$date_2 = $reminder['date_2'];
+			$date_2 = str_ireplace($replacements,'',$date_2);
+			$date_2 = trim($date_2);
+		}
 		if(validDate($reminder_date)) {
 			if($timezone === false) {
 				$timezone  = new DateTimeZone('America/New_York');
 			}
 			//$return .= $reminder['tense'];
 			$now = new DateTime('now', $timezone);
-			$normalized_date = date('Y-m-d', strtotime($reminder_date));
+			if($date_2 != '') {
+				if(strpos($date_2,'-') !== false || strpos($date_2,'/') !== false || strpos($date_2,' ') !== false) {
+					$normalized_date = date('Y-m-d', strtotime($date_2));
+				} else {
+					$justyear = true;
+					$normalized_date = date('Y-m-d', strtotime('1-1-'.$date_2));
+				}
+			} else {
+				if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
+					$normalized_date = date('Y-m-d', strtotime($reminder_date));
+				} else {
+					$justyear = true;
+					$normalized_date = date('Y-m-d', strtotime('1-1-'.$reminder_date));
+				}
+			}
 			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
 			$time_calulation = $reminder_date_time->diff($now);
 			//$return .= '<pre>'.print_r($time_calulation,true).'</pre>';
@@ -1092,7 +1137,6 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				}
 			}
 			$return .= '<div class="phrase">';
-				
 				if($reminder['tag'] == 'Birthdays') { //if($reminder['is_birthday']) {
 					if($reminder['about_me']) {
 						$return .= "I am <span>$time old</span>";
@@ -1104,6 +1148,20 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						}
 						$return .= " is <span>$time old</span>";
 					}
+				} else if($date_2 != '') {
+					$phrase = rtrim($reminder['phrase'], '.');
+					$phrase = str_replace('from','',str_replace('to','',str_replace('-','',$phrase)));
+					/*if(isset($reminder['complement'])) {
+						$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $phrase);
+					} else {
+						$phrase = $phrase;
+					}*/
+					$return .= $phrase;
+					$return .= " <span>$time";
+					if($reminder['tense'] == 'past') {
+						$return .= " ago";
+					}
+					$return .= "</span>";
 				} else {
 					$phrase = rtrim($reminder['phrase'], '.');
 					if($reminder['tense'] == 'present perfect' || $reminder['tense'] == 'present perfect continuous') {
@@ -1135,10 +1193,21 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				
 				// Check if the input string contains a numeric value for the day
 				$return .= '<div class="detail-date">';
-				if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $reminder_date, $matches)) {
+				if($justyear) {
+					$return .= $reminder['date'];
+				} else if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $reminder_date, $matches)) {
 					$return .= date('F jS, Y', strtotime($reminder_date));
 				} else {
 					$return .= date('F, Y', strtotime($reminder_date));
+				}
+				if($date_2 != '') {
+					if($justyear) {
+						$return .= ' - '.$reminder['date_2'];
+					} else if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $date_2, $matches)) {
+						$return .= ' - '. date('F jS, Y', strtotime($date_2));
+					} else {
+						$return .= ' - '.date('F, Y', strtotime($date_2));
+					}	
 				}
 				$return .= '</div>';
 
