@@ -328,6 +328,11 @@ function my_mail_from_name( $name ) {
     return "Fog Brain";
 }
 
+add_filter( 'wp_mail_from', 'my_send_from' );
+function my_send_from( $original_email_address ) {
+    return 'notifications@myfogbrain.com';
+}
+
 add_action('after_setup_theme', 'remove_admin_bar');
 function remove_admin_bar() {
 	if (!current_user_can('administrator') && !is_admin()) {
@@ -375,6 +380,8 @@ function check_login_code_callback() {
 	} else {
 		$user = get_user_by('email',$transient);
 		if($user === false) {
+			//notify me
+			wp_mail('hello@mynameisgregg.com','Fog Brain Signup','Damn, it really happened?');
 			//new user
 			$username = strstr($transient, '@', true);
 			$user_args = array(
@@ -873,24 +880,40 @@ function add_gpt_reminder_callback() {
 		$primary_subject = $message['primary_subject'];
 		$complement = $message['complement'];
 
+		$user_timezone = get_user_meta($current_user->ID,'timezone',true);
+		if($user_timezone == '') {
+			$user_timezone = 'America/New_York';
+		}
+		$timezone  = new DateTimeZone($user_timezone);
+
+		$diffDays = 10;
+		if($tense == 'future' || $tense == 'present') {
+			$today = new DateTime("today");
+			$reminder_date = str_replace(',','',$date);
+			$normalized_date = date('Y-m-d', strtotime($reminder_date));
+			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
+			if($reminder_date_time < $today) {
+				//event is in the past
+				$tense = 'past';
+				$phrase = str_replace('is','was',$phrase);
+				$phrase = str_replace('will be','was',$phrase);
+			}
+		}
+
+
 		$new_reminder = array(
 			'date' => $date,
 			'is_birthday' => $is_birthday,
 			'primary_subject' => $primary_subject,
 			'about_me' => $about_me,
 			'phrase' => $phrase,
-			'tense' => $message['tense'],
+			'tense' => $tense,
 			'complement' => $message['complement'],
 			'note' => $note,
 			'public' => $public,
 			'tag' => $tag
 		);
 
-		$user_timezone = get_user_meta($current_user->ID,'timezone',true);
-		if($user_timezone == '') {
-			$user_timezone = 'America/New_York';
-		}
-		$timezone  = new DateTimeZone($user_timezone);
 		$saved_reminders[] = $new_reminder;
 		update_post_meta($profile_page_id,'user_reminders',$saved_reminders);
 		$reminder = '<div class="reminder" data-id="'.$index.'"><div class="handle"></div><div class="reminder-content">';
@@ -901,6 +924,7 @@ function add_gpt_reminder_callback() {
 			array(
 				'error' => 0,
 				'reminder' => $reminder,
+				'days' => $diffDays
 			)
 		);
 		wp_die();
@@ -941,6 +965,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 			}
 		}
 		if($needs_update) {
+			echo 'needs update';
 			update_post_meta($profile_page_id,'user_reminders',$reminders);
 		}
 	}
@@ -1007,7 +1032,6 @@ function validDate($date, $format = 'Y-m-d') {
 function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false) {
 
 	$return = '';
-	
 	$return .= '<div class="reminder-data">';
 		$reminder_date = str_replace(',','',$reminder['date']);
 		if(validDate($reminder_date)) {
@@ -1068,7 +1092,8 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				}
 			}
 			$return .= '<div class="phrase">';
-				if($reminder['is_birthday']) {
+				
+				if($reminder['tag'] == 'Birthdays') { //if($reminder['is_birthday']) {
 					if($reminder['about_me']) {
 						$return .= "I am <span>$time old</span>";
 					} else {
@@ -1101,7 +1126,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 			$return .= '</div>';
 			$return .= '<div class="detail">';
 				/*$subject = ucfirst(str_replace(',','',$primary_subject));*/
-				if($reminder['tag'] != '') {
+				if($reminder['tag'] != '' && $reminder['tag'] != 'None') {
 					$tag = strtolower(str_replace(' ','-',str_replace(' & ','-',$reminder['tag'])));
 					//if($tag == 'birthdays') {
 						$return .= '<span class="tag-icon '.$tag.'"></span>';
@@ -1170,7 +1195,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$return .= '<input type="text" value="'.$reminder['tag'].'" placeholder="Category" class="tag existing '.$placeholder.'" />';
 					
 				$return .= '</div>';
-				if($reminder['tag'] != '') {
+				if($reminder['tag'] != '' && $reminder['tag'] != 'None') {
 					$tag = strtolower(str_replace(' ','-',str_replace(' & ','-',$reminder['tag'])));
 					//if($tag == 'birthdays') {
 						$return .= '<span class="tag-icon '.$tag.'"></span>';

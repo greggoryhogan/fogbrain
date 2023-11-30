@@ -502,6 +502,7 @@
                         $('#tag').val('');
                         $('.noreminders').hide();
                         $('.reminders').append(response.reminder);
+                        //console.log(response);
                         $('.reminders .reminder:last-of-type').addClass('showing-reminder');
                         checkForEmptyDetails();
                     }
