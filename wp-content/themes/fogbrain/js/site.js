@@ -384,6 +384,7 @@
             }
             //window.location.href = window.location.href;
         } else {
+            $('.tag-btn[data-tag="All"]').trigger('click');
             $('.reminder-form').addClass('is-active');
             $('.edit-reminders').hide();
             $(this).text('Cancel');
