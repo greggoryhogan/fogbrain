@@ -1043,10 +1043,28 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$months = $time_calulation->m + 12;
 						$time = "$months months";
 					} else {
+						/*$months = round(($time_calulation->m / 12) * 2) / 2;
+						if($months != 0) {
+							$months = ltrim($months,'0');
+							$time = "$time_calulation->y$months years";
+						} else {
+							$time = "$time_calulation->y year";
+						}*/
 						$time = "$time_calulation->y year";
 					}
 				} else {
-					$time = "$time_calulation->y years";
+					if($reminder['is_birthday']) {
+						$time = "$time_calulation->y years";
+					} else {
+						/*$months = round(($time_calulation->m / 12) * 2) / 2;
+						if($months != 0) {
+							$months = ltrim($months,'0');
+							$time = "$time_calulation->y$months years";
+						} else {
+							$time = "$time_calulation->y years";
+						}*/
+						$time = "$time_calulation->y years";
+					}
 				}
 			}
 			$return .= '<div class="phrase">';
