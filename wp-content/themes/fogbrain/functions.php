@@ -1150,7 +1150,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					}
 				} else if($date_2 != '') {
 					$phrase = rtrim($reminder['phrase'], '.');
-					$phrase = str_replace('from','',str_replace('to','',str_replace('-','',$phrase)));
+					$phrase = str_replace('from','',str_replace('-','',$phrase));
 					/*if(isset($reminder['complement'])) {
 						$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $phrase);
 					} else {
