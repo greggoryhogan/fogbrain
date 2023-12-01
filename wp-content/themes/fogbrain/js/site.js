@@ -411,6 +411,16 @@
         if($('.reminders .reminder').length < 5) {
             $('.done-editing.bottom-editor').hide();
         }
+        $( '.reminder-summary .reminders .note').each(function() {
+            if($(this).find('a').length) {
+                $(this).find('a').each(function() {
+                    var href = $(this).attr('href');
+                    $(this).replaceWith(function() { 
+                        return href;
+                    });
+                });
+            }
+        });
         $( '.reminder-summary .reminders .note').attr('contenteditable',true);
         $( '.reminder-summary .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
             sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
@@ -675,5 +685,10 @@
             
         });
     }
+
+    $('#reminder-form .feather-info').on('click',function() {
+        $(this).toggleClass('is-active');
+        $('.reminder-support').toggleClass('is-active');
+    });
 
 })(jQuery); // Fully reference jQuery after this point.

@@ -1108,53 +1108,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 			
 			
 			//$return .= '<pre>'.print_r($time_calulation,true).'</pre>';
-			if($time_calulation->y == 0) {
-				if($time_calulation->m  > 0) {
-					if($time_calulation->m == 1) {
-						$time = "$time_calulation->m month";
-					} else {
-						$time = "$time_calulation->m months";
-					}
-				} else {
-					if($time_calulation->d == 0) {
-						$time = "today!";
-					} else if($time_calulation->d == 1) {
-						$time = "$time_calulation->d day";
-					} else {
-						$time = "$time_calulation->d days";
-					}
-				}
-			} else {
-				if($time_calulation->y == 1) {
-					if($reminder['is_birthday']) {
-						//baby
-						$months = $time_calulation->m + 12;
-						$time = "$months months";
-					} else {
-						/*$months = round(($time_calulation->m / 12) * 2) / 2;
-						if($months != 0) {
-							$months = ltrim($months,'0');
-							$time = "$time_calulation->y$months years";
-						} else {
-							$time = "$time_calulation->y year";
-						}*/
-						$time = "$time_calulation->y year";
-					}
-				} else {
-					if($reminder['is_birthday']) {
-						$time = "$time_calulation->y years";
-					} else {
-						/*$months = round(($time_calulation->m / 12) * 2) / 2;
-						if($months != 0) {
-							$months = ltrim($months,'0');
-							$time = "$time_calulation->y$months years";
-						} else {
-							$time = "$time_calulation->y years";
-						}*/
-						$time = "$time_calulation->y years";
-					}
-				}
-			}
+			$time = get_timespan($time_calulation, $reminder);
 			$return .= '<div class="phrase">';
 				if($reminder['tag'] == 'Birthdays') { //if($reminder['is_birthday']) {
 					if($reminder['about_me']) {
@@ -1194,6 +1148,11 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$phrase = rtrim($reminder['phrase'], '.');
 					if($reminder['tense'] == 'present perfect' || $reminder['tense'] == 'present perfect continuous') {
 						$phrase = rtrim($phrase, 'since');	
+					}
+					if($reminder['tense'] == 'past') {
+						if(substr($phrase, -3) == ' in') {
+							$phrase = rtrim($phrase, " in");	
+						}
 					}
 					$return .= "$phrase";
 					if(strpos($phrase,',')) {
@@ -1236,12 +1195,31 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					} else {
 						$return .= ' - '.date('F, Y', strtotime($date_2));
 					}	
+					$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date_to, $timezone);
+					$time_calulation_2 = $reminder_date_time->diff($now);
+					$time_2 = get_timespan($time_calulation_2, $reminder);
+					$return .= ', '.$time_2 .' ago';
 				}
 				$return .= '</div>';
 
 				
 				if($reminder['note'] !== '') {
 					$note = $reminder['note'];
+					preg_match_all('#\bhttps?://[^,\s()<>]+(?:\([\w\d]+\)|([^,[:punct:]\s]|/))#', $note, $match);
+					if(!empty($match[0])) {
+						$linkct = 0;
+						foreach($match[0] as $link) {
+							$url = parse_url($link); 
+							$base_url = trim($url['host'], '/');
+							if($linkct > 0) {
+								$note = str_replace($link,' | <a href="'.$link.'" target="_blank">'.$base_url.'</a>',$note);
+							} else {
+								$note = str_replace($link,'<a href="'.$link.'" target="_blank">'.$base_url.'</a>',$note);
+							}
+							
+							$linkct++;
+						}
+					} 
 					$placeholder = '';
 					$sep = '&nbsp;-&nbsp;';
 				} else {
@@ -1249,7 +1227,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$sep = ' ';
 					$placeholder = 'placeholder';
 				}
-				$return .= '<div class="sep">'.$sep.'</div>';
+				//$return .= '<div class="sep">'.$sep.'</div>';
 				$return .= '<div class="tags">';
 					if($reminder['tag']) {
 						$val = $reminder['tag'];
@@ -1305,7 +1283,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$note = '';
 					$placeholder = '';
 				}
-				$return .= '<div class="note '.$placeholder.'">'.$note.'</div>';
+				$return .= '<div class="note nodate '.$placeholder.'">'.$note.'</div>';
 				$public = $reminder['public'];
 				if($public == 'false') {
 					$return .= '<div class="public-notice">';
@@ -1331,6 +1309,57 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 		
 	$return .= '</div>';
 	return $return;
+}
+
+function get_timespan($time_calulation, $reminder) {
+	if($time_calulation->y == 0) {
+		if($time_calulation->m  > 0) {
+			if($time_calulation->m == 1) {
+				$time = "$time_calulation->m month";
+			} else {
+				$time = "$time_calulation->m months";
+			}
+		} else {
+			if($time_calulation->d == 0) {
+				$time = "today!";
+			} else if($time_calulation->d == 1) {
+				$time = "$time_calulation->d day";
+			} else {
+				$time = "$time_calulation->d days";
+			}
+		}
+	} else {
+		if($time_calulation->y == 1) {
+			if($reminder['is_birthday']) {
+				//baby
+				$months = $time_calulation->m + 12;
+				$time = "$months months";
+			} else {
+				/*$months = round(($time_calulation->m / 12) * 2) / 2;
+				if($months != 0) {
+					$months = ltrim($months,'0');
+					$time = "$time_calulation->y$months years";
+				} else {
+					$time = "$time_calulation->y year";
+				}*/
+				$time = "$time_calulation->y year";
+			}
+		} else {
+			if($reminder['is_birthday']) {
+				$time = "$time_calulation->y years";
+			} else {
+				/*$months = round(($time_calulation->m / 12) * 2) / 2;
+				if($months != 0) {
+					$months = ltrim($months,'0');
+					$time = "$time_calulation->y$months years";
+				} else {
+					$time = "$time_calulation->y years";
+				}*/
+				$time = "$time_calulation->y years";
+			}
+		}
+	}
+	return $time;
 }
 
 /**

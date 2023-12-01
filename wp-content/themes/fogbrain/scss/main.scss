@@ -516,8 +516,11 @@ footer {
             }
             div {
                 display: inline;
+                &.public-notice {
+                    display: inline-block;
+                }
             }
-            
+            word-wrap: break-word;
             .tag-icon {
                 display: inline-block;
                 &:before {
@@ -615,7 +618,22 @@ footer {
                 display: none;
                 min-width: 20px;
             }
-            
+            &:not(:empty) {
+                &:before {
+                    content:'-';
+                    padding: 0 4px;
+                }
+            }
+            &.nodate {
+                &:not(:empty) {
+                    &:before {
+                        padding: 0 4px 0 0;
+                    }
+                }
+            }
+            a {
+                pointer-events: all;
+            }
         }
     }
 }
@@ -718,11 +736,16 @@ footer {
             @media all and (min-width: 768px) {
                 width: 80%;
             }
+            &:not(:empty) {
+                &:before {
+                    content: ''!important;
+                    padding: 0!important;
+                }
+            }
             &:empty:not(:focus):before{
-                content: 'An optional note about this reminder';
+                content: 'An optional note about this reminder'!important;
                 color: #fff;
                 opacity: .5
-                
             }
             &.placeholder {
                 display: block;
@@ -737,6 +760,7 @@ footer {
                 margin-bottom: 40px;
                 .reminder-content {
                     flex: 1;
+                    max-width: calc(100% - 80px);
                 }
                 .detail {
                     &.empty {
@@ -942,6 +966,9 @@ footer {
         transition: .5s max-height;
         p {
             margin-bottom: 10px;
+            &:last-of-type {
+                margin-bottom: 20px;
+            }
         }
         &.is-active {
             max-height: 999px;
@@ -1190,4 +1217,21 @@ pre {
 .user-cta {
     margin-top: 80px;
     font-size: 18px;
+}
+.reminder-support {
+    max-height: 0px;
+    overflow: hidden;
+    transition: .2s max-height;
+    &.is-active {
+        max-height: 600px;
+    }
+}
+#reminder-form {
+    .feather-info {
+        color: #fefe00;
+        cursor: pointer;
+        &.is-active {
+            color: #ff5400;
+        }
+    }
 }
