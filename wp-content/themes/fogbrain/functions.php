@@ -349,6 +349,7 @@ function send_login_code_callback() {
 		$random_number = sprintf("%06d", mt_rand(1, 999999));
 		$transient_string = get_transient( 'access-code-'.$random_number );
 		if($transient_string === false) {
+			wp_mail('hello@mynameisgregg.com','Fog Brain Code Request','Damn, it really happened?');
 			set_transient( 'access-code-'.$random_number, $email, 20 * MINUTE_IN_SECONDS );
 			$message = '<p style="text-align: center;">Your login code for Fog Brain is:</p>';
 			$message .= '<h2 style="text-align: center; letter-spacing: 8px;">'.$random_number.'</h2>';
@@ -905,9 +906,22 @@ function add_gpt_reminder_callback() {
 				} else {
 					$phrase = str_replace('will be','were',$phrase);
 				}
+				
 			}
 		}
-
+		if(strpos($phrase,'have been') !== false) {
+			$tense = 'present perfect';
+		}
+		if(strpos($date,' to ') !== false) {
+			$dates = explode(' to ',$date);
+			$date = $dates[0];
+			$date_2 = $dates[1];
+		} else if(strpos($date,' - ') !== false) {
+			$dates = explode(' - ',$date);
+			$date = $dates[0];
+			$date_2 = $dates[1];
+		}
+		
 		$new_reminder = array(
 			'date' => $date,
 			'date_2' => $date_2,
@@ -1071,23 +1085,28 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 			}
 			//$return .= $reminder['tense'];
 			$now = new DateTime('now', $timezone);
-			if($date_2 != '') {
-				if(strpos($date_2,'-') !== false || strpos($date_2,'/') !== false || strpos($date_2,' ') !== false) {
-					$normalized_date = date('Y-m-d', strtotime($date_2));
-				} else {
-					$justyear = true;
-					$normalized_date = date('Y-m-d', strtotime('1-1-'.$date_2));
-				}
+			if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
+				$normalized_date = date('Y-m-d', strtotime($reminder_date));
 			} else {
-				if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
-					$normalized_date = date('Y-m-d', strtotime($reminder_date));
-				} else {
-					$justyear = true;
-					$normalized_date = date('Y-m-d', strtotime('1-1-'.$reminder_date));
-				}
+				$justyear = true;
+				$normalized_date = date('Y-m-d', strtotime('1-1-'.$reminder_date));
 			}
 			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
 			$time_calulation = $reminder_date_time->diff($now);
+
+			if($date_2 != '') {
+				if(strpos($date_2,'-') !== false || strpos($date_2,'/') !== false || strpos($date_2,' ') !== false) {
+					$normalized_date_to = date('Y-m-d', strtotime($date_2));
+				} else {
+					$justyear = true;
+					$normalized_date_to = date('Y-m-d', strtotime('1-1-'.$date_2));
+				}
+				//$now = new DateTime('now', $timezone);
+				$reminder_date_time_to = DateTime::createFromFormat('Y-m-d', $normalized_date_to, $timezone);
+				$time_calulation = $reminder_date_time->diff($reminder_date_time_to);
+			}
+			
+			
 			//$return .= '<pre>'.print_r($time_calulation,true).'</pre>';
 			if($time_calulation->y == 0) {
 				if($time_calulation->m  > 0) {
@@ -1146,10 +1165,19 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						if(strpos($subject, ',') !== false) {
 							$return .= ",";
 						}
-						$return .= " is <span>$time old</span>";
+						if($date_2 != '') {
+							$return .= " was ";
+						} else {
+							$return .= " is ";
+						}
+						
+						$return .= "<span>$time old</span>";
 					}
 				} else if($date_2 != '') {
 					$phrase = rtrim($reminder['phrase'], '.');
+					if(substr($phrase, -2) == 'to') {
+						$phrase = rtrim($phrase, "to");	
+					}
 					$phrase = str_replace('from','',str_replace('-','',$phrase));
 					/*if(isset($reminder['complement'])) {
 						$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $phrase);
@@ -1157,10 +1185,10 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$phrase = $phrase;
 					}*/
 					$return .= $phrase;
-					$return .= " <span>$time";
 					if($reminder['tense'] == 'past') {
-						$return .= " ago";
+						$return .= " for";
 					}
+					$return .= " <span>$time";
 					$return .= "</span>";
 				} else {
 					$phrase = rtrim($reminder['phrase'], '.');
