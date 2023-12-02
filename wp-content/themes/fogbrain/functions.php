@@ -993,7 +993,6 @@ function process_gpt_reminders($reminders, $author_id = null) {
 			}
 		}
 		if($needs_update) {
-			echo 'needs update';
 			update_post_meta($profile_page_id,'user_reminders',$reminders);
 		}
 	}
@@ -1023,6 +1022,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 		$reminders_html .= '</div>';
 	}
 	
+	$privates = 0;
 	foreach($reminders as $index => $reminder) {
 		if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
 			//print_r($reminder);
@@ -1043,6 +1043,18 @@ function process_gpt_reminders($reminders, $author_id = null) {
 				}
 			$reminders_html .= '</div>';
 		}
+		if($reminder['public'] != 'true' && !$is_my_page) {
+			$privates++;
+		}
+	}
+	if($privates > 0) {
+		$reminders_html .= '<div class="reminder">';
+		if($privates == 1) {
+			$reminders_html .= '<p class="private-reminder-ct">And <span>'.$privates.'</span> other private reminder.</p>';
+		} else {
+			$reminders_html .= '<p class="private-reminder-ct">And <span>'.$privates.'</span> other private reminders.</p>';
+		}
+		$reminders_html .= '</div>';
 	}
 	return $reminders_html;
 }
@@ -1084,7 +1096,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				$timezone  = new DateTimeZone('America/New_York');
 			}
 			//$return .= $reminder['tense'];
-			$now = new DateTime('now', $timezone);
+			$now = new DateTime('today', $timezone);
 			if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
 				$normalized_date = date('Y-m-d', strtotime($reminder_date));
 			} else {
@@ -1330,7 +1342,7 @@ function get_timespan($time_calulation, $reminder) {
 		}
 	} else {
 		if($time_calulation->y == 1) {
-			if($reminder['is_birthday']) {
+			if($reminder['tag'] == 'Birthdays') {
 				//baby
 				$months = $time_calulation->m + 12;
 				$time = "$months months";
@@ -1342,7 +1354,14 @@ function get_timespan($time_calulation, $reminder) {
 				} else {
 					$time = "$time_calulation->y year";
 				}*/
+				//$time = "$time_calulation->y year";
+				$months = $time_calulation->m;
 				$time = "$time_calulation->y year";
+				if($months == 1) {
+					$time .= ", $months month";
+				} else {
+					$time .= ", $months months";
+				}
 			}
 		} else {
 			if($reminder['is_birthday']) {
