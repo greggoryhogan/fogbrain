@@ -507,9 +507,10 @@
                         $('.reminder-form').removeClass('is-active');
                         $('#add-reminder').text('Add Reminder');
                         $('.edit-reminders').show();
-                        $('#prompt').val('')
+                        $('#prompt').val('');
                         $('#note').val('');
                         $('#tag').val('');
+                        $( "#public" ).prop( "checked", false );
                         $('.noreminders').hide();
                         $('.reminders').append(response.reminder);
                         //console.log(response);

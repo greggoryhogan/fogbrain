@@ -747,7 +747,7 @@ function get_chat_gpt_response($prompt) {
 
 	$prompt_instructions = "Analyze the user input ## {$prompt} ##.
 
-	Extract a single date, if any, from the user input and assign it to the variable 'date.'. If a second date is found or the date has a span of time like 'to' or '-', assign it to the variable 'date_2'.
+	Extract a single date including the month day and year, if any, from the user input and assign it to the variable 'date.'. If a second date is found or the date has a span of time like 'to' or '-', assign it to the variable 'date_2'.
 
 	Determine the tense of the user input and assign it to the variable 'tense'.
 
@@ -1077,6 +1077,9 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 		'summer',
 		'autumn',
 		'monsoon',
+		'st',
+		'th',
+		'nd'
 	);
 	$return = '';
 	//$return .= print_r($reminder,true);

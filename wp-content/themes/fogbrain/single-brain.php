@@ -46,8 +46,9 @@
                                 //gravity_form( 1, false, false ); //to do ajax, , false, null, true
                                 //echo '<div class="error-notice"></div>';
                                 echo '<p class="flex">Add your reminder. '.featherIcon('info').'</p>';
-                                echo '<div class="reminder-support"><p>You can type things like &ldquo;My birthday is November 25, 1985&rdquo;, &ldquo;I have been married since 9/10/2021&rdquo;, &ldquo;I went to school from 2004 to 2008&rdquo; or &ldquo;We were married in Las Vegas.&rdquo; <strong>If you&rsquo;re using a date in your reminder, be sure to include at least the year.</strong></p>';
-                                echo '<p>The response from your reminder is AI generated. If it doesn&rsquo;t display correctly, try submitting your reminder again or using different phrasing. Hint: Reminders categorized as birthdays display a bit differently.</p>';
+                                echo '<div class="reminder-support"><p>You can type things like &ldquo;My birthday is 11/25/1985&rdquo;, &ldquo;I have been married since September 10th, 2021&rdquo;, &ldquo;I went to school from 2004 to 2008&rdquo; or &ldquo;We were married in Las Vegas.&rdquo; <strong>If you&rsquo;re using a date in your reminder, be sure to include at least the year.</strong></p>';
+                                echo '<p>The response from your reminder is AI generated. It does better with dates formatted as month/day/year. If it doesn&rsquo;t display correctly, try submitting your reminder again or using different phrasing.</p>';
+                                echo '<p>Hint: Reminders categorized as birthdays display a bit differently.</p>';
                                 echo '</div>';
                                 echo '<p>For your security, do not add sensitive information such as social security or phone numbers.</p>';
                                 echo '<input id="prompt" type="text" placeholder="Add your reminder" />';
@@ -55,7 +56,7 @@
                                     echo '<input type="text" id="note" placeholder="An optional note about this reminder" />';
                                     echo '<input type="text" id="tag" placeholder="Category" class="flex-33" />';
                                 echo '</div>';
-                                echo '<label><input type="checkbox" id="public" checked="checked" /> This reminder is public</label>';
+                                echo '<label><input type="checkbox" id="public" /> This reminder is public</label>'; //checked="checked"
                                 echo 'Public reminders will remain private if your page is not shared.<br>';
                                 echo '<input type="submit" value="Add Reminder" class="big-link has-cursor" onclick="gtag(\'event\',\'added_reminder\');" />';
                             echo '</form>';
