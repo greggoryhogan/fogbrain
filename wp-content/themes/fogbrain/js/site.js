@@ -422,14 +422,14 @@
             }
         });
         $( '.reminder-summary .reminders .note').attr('contenteditable',true);
-        $( '.reminder-summary .reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
+        $( '.reminder-summary .reminders .all-reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
             sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
           } 
         });
     });
 
     $(document).on('click','.done-editing',function() {
-        $( '.reminder-summary .reminders' ).sortable('disable');
+        $( '.reminder-summary .reminders .all-reminders' ).sortable('disable');
         $('.tag').autocomplete({source: []});
         var save = [];
         $( '.reminder-summary .reminder').each(function() {
@@ -512,7 +512,7 @@
                         $('#tag').val('');
                         $( "#public" ).prop( "checked", false );
                         $('.noreminders').hide();
-                        $('.reminders').append(response.reminder);
+                        $('.reminders .all-reminders').append(response.reminder);
                         //console.log(response);
                         $('.reminders .reminder:last-of-type').addClass('showing-reminder');
                         checkForEmptyDetails();
@@ -691,5 +691,76 @@
         $(this).toggleClass('is-active');
         $('.reminder-support').toggleClass('is-active');
     });
+
+    $(document).on('change','#reminder-sort',function() {
+        var val = $(this).val();
+        
+        if(val == 'custom') {
+            $('.all-reminders .reminder').each(function() {
+                $(this).css('grid-row','');
+            });
+        } else if(val == 'month-asc' || val == 'month-desc') {
+            var months = [];
+            var extra = [];
+            $('.all-reminders .reminder').each(function() {
+                if($(this).find('.phrase').attr('data-month') != '') {
+                    months.push({
+                        id : $(this).attr('data-id'),
+                        month : $(this).find('.phrase').attr('data-month')
+                    });
+                } else {
+                    extra.push({
+                        id : $(this).attr('data-id'),
+                    });
+                }
+            });
+            months.sort(function(a,b) {
+                return a.month - b.month;
+            });
+            if(val == 'month-desc') {
+                months.reverse();
+            }
+            var cont = 0;
+            for (i = 0; i < months.length; ++i) {
+                $('.reminder[data-id="'+ months[i].id+'"]').css('grid-row',i);
+                cont = i;
+            }
+            for (i = 0; i < extra.length; ++i) {
+                cont++;
+                $('.reminder[data-id="'+ months[i].id+'"]').css('grid-row',cont);
+            }
+        } else if(val == 'year-asc' || val == 'year-desc') {
+            var years = [];
+            var extra = [];
+            $('.all-reminders .reminder').each(function() {
+                if($(this).find('.phrase').attr('data-year') != '') {
+                    years.push({
+                        id : $(this).attr('data-id'),
+                        year : $(this).find('.phrase').attr('data-year')
+                    });
+                } else {
+                    extra.push({
+                        id : $(this).attr('data-id'),
+                    });
+                }
+            });
+            years.sort(function(a,b) {
+                return a.year - b.year;
+            });
+            if(val == 'year-desc') {
+                years.reverse();
+            }
+            var cont = 0;
+            for (i = 0; i < years.length; ++i) {
+                $('.reminder[data-id="'+ years[i].id+'"]').css('grid-row',i);
+                cont = i;
+            }
+            for (i = 0; i < extra.length; ++i) {
+                cont++;
+                $('.reminder[data-id="'+ years[i].id+'"]').css('grid-row',cont);
+                
+            }
+        } 
+    })
 
 })(jQuery); // Fully reference jQuery after this point.

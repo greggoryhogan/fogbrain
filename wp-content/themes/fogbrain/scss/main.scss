@@ -670,11 +670,20 @@ footer {
             margin-bottom: 5px;
         }
     }
+    .all-reminders {
+        display: grid;
+    }
+    .reminder-options {
+        margin-bottom: 60px;
+        display: flex;
+        gap: 30px;
+        font-size: 16px;
+        align-items: center;
+    }
     .reminder-tags {
         font-size: 16px;
         display: flex;
         gap: 10px;
-        margin-bottom: 60px;
         align-items: center;
         flex-wrap: wrap;
         .tag-btn {
@@ -737,6 +746,7 @@ footer {
             color: #fff;
             display: block!important;
             margin-top: 10px;
+            word-wrap: anywhere;
             @media all and (min-width: 768px) {
                 width: 80%;
             }
@@ -764,7 +774,6 @@ footer {
                 margin-bottom: 40px;
                 .reminder-content {
                     flex: 1;
-                    max-width: calc(100% - 80px);
                 }
                 .detail {
                     &.empty {
@@ -975,7 +984,7 @@ footer {
             }
         }
         &.is-active {
-            max-height: 999px;
+            max-height: 1500px;
         }
         #reminder-form {
             font-size: 18px;

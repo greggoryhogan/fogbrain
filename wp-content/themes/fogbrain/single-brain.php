@@ -30,9 +30,9 @@
                 echo '</h1>'; ?>
                 <?php $share = get_post_meta($post->ID,'share_code',true);
                 if($share != '' && $author_id == $current_user->ID) {
-                    echo '<div class="share-link"><span id="share-link">'.get_permalink().'share/'.$share.'</span><span class="share-page-text">Share: </span><div class="copy"></div><a href="/profile" class="edit"></a></div>';
+                    echo '<div class="share-link"><span id="share-link">'.get_permalink().'share/'.$share.'</span><span class="share-page-text">Share: </span><div class="copy"></div></div>';
                 } else if($share == '' && $author_id == $current_user->ID) {
-                    echo '<div class="share-link not-active">Visibility: Hidden<a href="/profile" class="edit"></a></div>';
+                    echo '<div class="share-link not-active">Visibility: Hidden</div>';
                 } ?>
                 
                 <div class="reminder-summary">

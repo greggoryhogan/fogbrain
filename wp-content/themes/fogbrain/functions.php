@@ -1012,41 +1012,54 @@ function process_gpt_reminders($reminders, $author_id = null) {
 			}
 		}
 	}
-	if(!empty($tags)) {
-		sort($tags);
-		$reminders_html .= '<div class="reminder-tags">';
-		$reminders_html .= '<div class="tag-btn" data-tag="All">All</div>';
-		foreach($tags as $tag) {
-			$reminders_html .= '<div class="tag-btn" data-tag="'.$tag.'" onclick="gtag(\'event\',\'filter_reminders\');">'.$tag.'</div>';
-		}
-		$reminders_html .= '</div>';
-	}
-	
-	$privates = 0;
-	foreach($reminders as $index => $reminder) {
-		if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
-			//print_r($reminder);
-			if($reminder['tag'] != '') {
-				$tag = $reminder['tag'];
-			} else {
-				$tag = '';
+	$reminders_html .= '<div class="reminder-options">';
+		if(!empty($tags)) {
+			sort($tags);
+			$reminders_html .= '<div class="reminder-tags">';
+			$reminders_html .= '<div class="tag-btn" data-tag="All">All</div>';
+			foreach($tags as $tag) {
+				$reminders_html .= '<div class="tag-btn" data-tag="'.$tag.'" onclick="gtag(\'event\',\'filter_reminders\');">'.$tag.'</div>';
 			}
-			$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
-				if($is_my_page) {	
-					$reminders_html .= '<div class="handle"></div>';
-				}
-				$reminders_html .= '<div class="reminder-content">';
-					$reminders_html .= process_gpt_reminder($reminder, $timezone, $is_my_page);
-				$reminders_html .= '</div>';
-				if($is_my_page) {
-					$reminders_html .= '<div class="delete"></div>';
-				}
 			$reminders_html .= '</div>';
 		}
-		if($reminder['public'] != 'true' && !$is_my_page) {
-			$privates++;
+		/*$reminders_html .= '<div class="sort">';
+			$reminders_html .= 'Sort by: ';
+			$reminders_html .= '<select id="reminder-sort">';
+				$reminders_html .= '<option value="custom">Default</option>';
+				$reminders_html .= '<option value="month-asc">Month (ASC)</option>';
+				$reminders_html .= '<option value="month-desc">Month (DESC)</option>';
+				$reminders_html .= '<option value="year-asc">Year (ASC)</option>';
+				$reminders_html .= '<option value="year-desc">Year (DESC)</option>';
+			$reminders_html .= '</select>';
+		$reminders_html .= '</div>';*/
+		$reminders_html .= '</div>';
+	$privates = 0;
+	$reminders_html .= '<div class="all-reminders">';
+		foreach($reminders as $index => $reminder) {
+			if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
+				//print_r($reminder);
+				if($reminder['tag'] != '') {
+					$tag = $reminder['tag'];
+				} else {
+					$tag = '';
+				}
+				$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
+					if($is_my_page) {	
+						$reminders_html .= '<div class="handle"></div>';
+					}
+					$reminders_html .= '<div class="reminder-content">';
+						$reminders_html .= process_gpt_reminder($reminder, $timezone, $is_my_page);
+					$reminders_html .= '</div>';
+					if($is_my_page) {
+						$reminders_html .= '<div class="delete"></div>';
+					}
+				$reminders_html .= '</div>';
+			}
+			if($reminder['public'] != 'true' && !$is_my_page) {
+				$privates++;
+			}
 		}
-	}
+	$reminders_html .= '</div>';
 	if($privates > 0) {
 		$reminders_html .= '<div class="reminder">';
 		if($privates == 1) {
@@ -1102,29 +1115,44 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 			$now = new DateTime('today', $timezone);
 			if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
 				$normalized_date = date('Y-m-d', strtotime($reminder_date));
+				$month = date('m', strtotime($reminder_date));
+				$year = date('Y', strtotime($reminder_date));
 			} else {
 				$justyear = true;
 				$normalized_date = date('Y-m-d', strtotime('1-1-'.$reminder_date));
+				$month = date('m', strtotime('1-1-'.$reminder_date));
+				$year = date('Y', strtotime('1-1-'.$reminder_date));
 			}
+			$month = date('m', strtotime($reminder_date));
 			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
 			$time_calulation = $reminder_date_time->diff($now);
 
 			if($date_2 != '') {
 				if(strpos($date_2,'-') !== false || strpos($date_2,'/') !== false || strpos($date_2,' ') !== false) {
 					$normalized_date_to = date('Y-m-d', strtotime($date_2));
+					$month = date('m', strtotime($date_2));
+					$year = date('Y', strtotime($date_2));
 				} else {
 					$justyear = true;
 					$normalized_date_to = date('Y-m-d', strtotime('1-1-'.$date_2));
+					$month = date('m', strtotime('1-1-'.$date_2));
+					$year = date('Y', strtotime('1-1-'.$date_2));
 				}
+				
 				//$now = new DateTime('now', $timezone);
 				$reminder_date_time_to = DateTime::createFromFormat('Y-m-d', $normalized_date_to, $timezone);
 				$time_calulation = $reminder_date_time->diff($reminder_date_time_to);
 			}
 			
+			$month_output = '';
+			if(!$justyear) {
+				$month_output = 'data-month="'.$month.'"';
+			}
+			
 			
 			//$return .= '<pre>'.print_r($time_calulation,true).'</pre>';
 			$time = get_timespan($time_calulation, $reminder);
-			$return .= '<div class="phrase">';
+			$return .= '<div class="phrase" '.$month_output.' data-year="'.$year.'">';
 				if($reminder['tag'] == 'Birthdays') { //if($reminder['is_birthday']) {
 					if($reminder['about_me']) {
 						$return .= "I am <span>$time old</span>";
@@ -1262,7 +1290,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 			$return .= '</div>';
 		} else {
 			//$return .= '<pre>'.print_r($reminder,true).'</pre>';
-			$return .= '<div class="phrase">';
+			$return .= '<div class="phrase" data-month="1" data-year="1">';
 				if(isset($reminder['complement'])) {
 					$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $reminder['phrase']);
 				} else {
@@ -1658,4 +1686,12 @@ function delete_account_email_callback() {
 
 	wp_die();
 }
+
+function fog_block_wp_admin() {
+	if ( is_admin() && ! current_user_can( 'administrator' ) && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+		wp_redirect( get_bloginfo('url') .'/login' );
+		exit;
+	}
+}
+add_action( 'admin_init', 'fog_block_wp_admin' );
 ?>
