@@ -962,12 +962,48 @@ function process_gpt_reminders($reminders, $author_id = null) {
 		$user_timezone = 'America/New_York';
 	}
 	$timezone  = new DateTimeZone($user_timezone);
-
+	$is_my_page = true;
+	if($author_id != null) {
+		if($current_user->ID != $author_id) {
+			$is_my_page = false;
+		}
+	}
 	//check if future event has passed and update reminders if necessary
 	if($author_id != null) {
 		$profile_page_id = get_user_meta($author_id,'user_profile_page',true);
 		$needs_update = false;
+		$hasupcoming = false;
+		$upcoming_reminders = array();
+		$today = strtotime(date('Y-m-d'));
+		$upcoming_date = strtotime(date('Y-m-d') . ' +1 month');
+		$replacements = array(
+			'spring',
+			'fall',
+			'winter',
+			'summer',
+			'autumn',
+			'monsoon',
+			'st',
+			'th',
+			'nd'
+		);
 		foreach($reminders as $index => $reminder) {
+			$reminder_date = str_replace(',','',$reminder['date']);
+			$reminder_date = str_ireplace($replacements,'',$reminder_date);
+			$reminder_date = trim($reminder_date);
+			if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
+				$normalized_date = date('Y-m-d', strtotime($reminder_date));
+				$day = date('d', strtotime($reminder_date));
+				$month = date('m', strtotime($reminder_date));
+				$upcoming_occurrance = strtotime(date("Y-$month-$day"));
+				if($upcoming_occurrance >= $today && $upcoming_occurrance <= $upcoming_date) {
+					if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
+						$hasupcoming = true;
+						$upcoming_reminders[] =  "$index";
+					}
+				}
+			} 
+
 			if($reminder['tense'] == 'future' || $reminder['tense'] == 'present') {
 				$today = new DateTime("today");
 				$reminder_date = str_replace(',','',$reminder['date']);
@@ -989,8 +1025,14 @@ function process_gpt_reminders($reminders, $author_id = null) {
 					}
 					$needs_update = true;
 					$reminders["$index"] = $reminder;
+				} else {
+					if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
+						$hasupcoming = true;
+						$upcoming_reminders[] =  "$index";
+					}
 				}
 			}
+
 		}
 		if($needs_update) {
 			update_post_meta($profile_page_id,'user_reminders',$reminders);
@@ -998,18 +1040,16 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	}
 
 	$reminders_html = '';
-	$is_my_page = true;
-	if($author_id != null) {
-		if($current_user->ID != $author_id) {
-			$is_my_page = false;
-		}
-	}
+	
 	$tags = array();
 	foreach($reminders as $index => $reminder) {
 		if($reminder['tag'] != '' && $reminder['tag'] != 'None' && ($reminder['public'] == 'true' || $is_my_page)) {
 			if(!in_array($reminder['tag'],$tags)) {
 				$tags[] = $reminder['tag'];
 			}
+		}
+		if($hasupcoming && !in_array('Upcoming',$tags)) {
+			$tags[] = 'Upcoming';
 		}
 	}
 	$reminders_html .= '<div class="reminder-options">';
@@ -1043,7 +1083,12 @@ function process_gpt_reminders($reminders, $author_id = null) {
 				} else {
 					$tag = '';
 				}
-				$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'">';
+				if(in_array($index,$upcoming_reminders)) {
+					$data_upcoming = "true";
+				} else {
+					$data_upcoming = "false";
+				}
+				$reminders_html .= '<div class="reminder" data-id="'.$index.'" data-tag="'.$tag.'" data-upcoming="'.$data_upcoming.'">';
 					if($is_my_page) {	
 						$reminders_html .= '<div class="handle"></div>';
 					}
@@ -1176,11 +1221,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$phrase = rtrim($phrase, "to");	
 					}
 					$phrase = str_replace('from','',str_replace('-','',$phrase));
-					/*if(isset($reminder['complement'])) {
-						$phrase = str_replace($reminder['complement'], '<span>'.$reminder['complement'].'</span>', $phrase);
-					} else {
-						$phrase = $phrase;
-					}*/
+					
 					$return .= $phrase;
 					if($reminder['tense'] == 'past') {
 						$return .= " for";
@@ -1202,7 +1243,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$return .= ',';
 					}
 					
-					if(($reminder['tense'] == 'future' || $reminder['tense'] == 'present') && $time != 'today!') {
+					if(($reminder['tense'] == 'future' || $reminder['tense'] == 'present') && $time != 'today') {
 						$return .= " in";
 					}
 					$return .= " <span>$time";
@@ -1283,6 +1324,39 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					
 				$return .= '</div>';
 				$return .= '<div class="note">'.$note.'</div>';
+				if($reminder['tag'] == 'Sobriety') {
+					$sober = '';
+					if($time_calulation->y > 0) {
+						if($time_calulation->y == 1) {
+							$sober .= $time_calulation->y .' year';
+						} else {
+							$sober .= $time_calulation->y .' years';
+						}
+					}
+					if($time_calulation->m > 0) {
+						if($sober != '') {
+							$sober .= ', ';
+						}
+						if($time_calulation->m == 1) {
+							$sober .= $time_calulation->m .' month';
+						} else {
+							$sober .= $time_calulation->m .' months';
+						}
+					}
+					if($time_calulation->m > 0) {
+						if($sober != '') {
+							$sober .= ', ';
+						}
+						if($time_calulation->d == 1) {
+							$sober .= $time_calulation->d .' day';
+						} else {
+							$sober .= $time_calulation->d .' days';
+						}
+					}
+					if($sober != '') {
+						$return .= "&nbsp;&dash;&nbsp;$sober";
+					}
+				}
 				$public = $reminder['public'];
 				if($public == 'false') {
 					$return .= '<div class="public-notice">&nbsp;&dash;&nbsp;<strong>PRIVATE</strong></div>';
@@ -1363,8 +1437,10 @@ function get_timespan($time_calulation, $reminder) {
 				$time = "$time_calulation->m months";
 			}
 		} else {
-			if($time_calulation->d == 0) {
-				$time = "today!";
+			if($time_calulation->d == 0 && $time_calulation->invert == 1) {
+				$time = "today";
+			} else if($time_calulation->d == 0 && $time_calulation->invert == 0) {
+				$time = "1 day";
 			} else if($time_calulation->d == 1) {
 				$time = "$time_calulation->d day";
 			} else {

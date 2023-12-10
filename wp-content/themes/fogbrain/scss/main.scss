@@ -16,7 +16,6 @@ body {
     margin: 0;
     box-sizing: border-box;
     width: 100%;
-    overflow-x: hidden;
     position:relative;
     &.is-active {
         overflow: hidden;
@@ -561,6 +560,12 @@ footer {
                         content: '\02708';
                     }
                 }
+                &.sobriety {
+                    &:before {
+                        content: '\1F94A';
+                        content: '\01F645';
+                    }
+                }
                 &.vacations {
                     &:before {
                         content: '\01F30E';
@@ -815,6 +820,11 @@ footer {
                     text-decoration: line-through;
                 }
             }
+        }
+        .sortable-placeholder {
+            background: #006868;
+            margin-bottom: 40px;
+            border-radius: 10px;
         }
     }
 }

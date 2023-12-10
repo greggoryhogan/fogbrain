@@ -422,9 +422,12 @@
             }
         });
         $( '.reminder-summary .reminders .note').attr('contenteditable',true);
-        $( '.reminder-summary .reminders .all-reminders' ).sortable({ disabled: false, handle: '.handle', update: function(event, ui) {
-            sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
-          } 
+        $( '.reminder-summary .reminders .all-reminders' ).sortable({ disabled: false,  helper: "clone", handle: '.handle',
+            placeholder: "sortable-placeholder",
+            forcePlaceholderSize: true,
+            update: function(event, ui) {
+                sortList = $(this).sortable('toArray', {attribute: 'data-id'});    
+            } 
         });
     });
 
@@ -533,6 +536,11 @@
         if(tag == 'All') {
             $('.hidden-reminder').removeClass('hidden-reminder').addClass('showing-reminder');
             $('.is-active').removeClass('is-active');
+        } else if(tag == 'Upcoming') {
+            $('.is-active').removeClass('is-active');
+            $(this).addClass('is-active');
+            $('.reminder').not('[data-upcoming="true"]').removeClass('showing-reminder').addClass('hidden-reminder');
+            $('.reminder[data-upcoming="true"]').removeClass('hidden-reminder').addClass('showing-reminder');
         } else {
             $('.is-active').removeClass('is-active');
             $(this).addClass('is-active');
@@ -551,6 +559,7 @@
         "Hobbies",
         "Misc",
         "Pets",
+        "Sobriety",
         "Special Events",
         "Travel",
         "None"
