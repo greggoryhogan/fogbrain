@@ -974,8 +974,8 @@ function process_gpt_reminders($reminders, $author_id = null) {
 		$needs_update = false;
 		$hasupcoming = false;
 		$upcoming_reminders = array();
-		$today = strtotime(date('Y-m-d'));
-		$upcoming_date = strtotime(date('Y-m-d') . ' +1 month');
+		$lowerBound = new DateTime(date('j M'));
+		$upperBound = new DateTime(date('j M') . ' +1 month');
 		$replacements = array(
 			'spring',
 			'fall',
@@ -987,25 +987,60 @@ function process_gpt_reminders($reminders, $author_id = null) {
 			'th',
 			'nd'
 		);
+		$todaydate = date('Ymd');
+		$next_year = date('Y') + 1;
+		$today = new DateTime("today");
 		foreach($reminders as $index => $reminder) {
 			$reminder_date = str_replace(',','',$reminder['date']);
 			$reminder_date = str_ireplace($replacements,'',$reminder_date);
 			$reminder_date = trim($reminder_date);
 			if(strpos($reminder_date,'-') !== false || strpos($reminder_date,'/') !== false || strpos($reminder_date,' ') !== false) {
-				$normalized_date = date('Y-m-d', strtotime($reminder_date));
-				$day = date('d', strtotime($reminder_date));
-				$month = date('m', strtotime($reminder_date));
-				$upcoming_occurrance = strtotime(date("Y-$month-$day"));
-				if($upcoming_occurrance >= $today && $upcoming_occurrance <= $upcoming_date) {
+				$day = date('j', strtotime($reminder_date));
+				$month = date('M', strtotime($reminder_date));
+				$checkDate = new DateTime("$month $day");
+				if($checkDate->format('Ymd') <= $todaydate) {
+					$checkDate = new DateTime("$month $day $next_year");
+				}
+				if ($lowerBound < $upperBound) {
+					$between = $lowerBound < $checkDate && $checkDate < $upperBound;
+				} else {
+					$between = $checkDate < $upperBound || $checkDate > $lowerBound;
+				}
+				if($between) {
 					if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
 						$hasupcoming = true;
 						$upcoming_reminders[] =  "$index";
-					}
+					} 
 				}
 			} 
+			//date 2
+			$date_2 = '';
+			if(isset($reminder['date_2'])) {
+				$date_2 = $reminder['date_2'];
+				$date_2 = str_ireplace($replacements,'',$date_2);
+				$date_2 = trim($date_2);
+				if(strpos($date_2,'-') !== false || strpos($date_2,'/') !== false || strpos($date_2,' ') !== false) {
+					$day_2 = date('j', strtotime($date_2));
+					$month_2 = date('M', strtotime($date_2));
+					$checkDate = new DateTime("$month_2 $day_2");
+					if($checkDate->format('Ymd') <= $todaydate) {
+						$checkDate = new DateTime("$month_2 $day_2 $next_year");
+					}
+					if ($lowerBound < $upperBound) {
+						$between = $lowerBound < $checkDate && $checkDate < $upperBound;
+					} else {
+						$between = $checkDate < $upperBound || $checkDate > $lowerBound;
+					}
+					if($between) {
+						if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
+							$hasupcoming = true;
+							$upcoming_reminders[] =  "$index";
+						} 
+					}
+				}
+			}
 
 			if($reminder['tense'] == 'future' || $reminder['tense'] == 'present') {
-				$today = new DateTime("today");
 				$reminder_date = str_replace(',','',$reminder['date']);
 				$normalized_date = date('Y-m-d', strtotime($reminder_date));
 				$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
@@ -1052,6 +1087,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 			$tags[] = 'Upcoming';
 		}
 	}
+	//$reminders_html .= print_r($upcoming_reminders,true);
 	$reminders_html .= '<div class="reminder-options">';
 		if(!empty($tags)) {
 			sort($tags);
@@ -1169,7 +1205,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				$year = date('Y', strtotime('1-1-'.$reminder_date));
 			}
 			$month = date('m', strtotime($reminder_date));
-			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone);
+			$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date, $timezone)->setTime(0,0);
 			$time_calulation = $reminder_date_time->diff($now);
 
 			if($date_2 != '') {
@@ -1185,7 +1221,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				}
 				
 				//$now = new DateTime('now', $timezone);
-				$reminder_date_time_to = DateTime::createFromFormat('Y-m-d', $normalized_date_to, $timezone);
+				$reminder_date_time_to = DateTime::createFromFormat('Y-m-d', $normalized_date_to, $timezone)->setTime(0,0);
 				$time_calulation = $reminder_date_time->diff($reminder_date_time_to);
 			}
 			
@@ -1280,7 +1316,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 						$return .= ' - '.date('F, Y', strtotime($date_2));
 					}	
 					$reminder_date_time = DateTime::createFromFormat('Y-m-d', $normalized_date_to, $timezone);
-					$time_calulation_2 = $reminder_date_time->diff($now);
+					$time_calulation_2 = $reminder_date_time->diff($now->setTime(0,0));
 					$time_2 = get_timespan($time_calulation_2, $reminder);
 					$return .= ', '.$time_2 .' ago';
 				}
@@ -1439,7 +1475,7 @@ function get_timespan($time_calulation, $reminder) {
 		} else {
 			if($time_calulation->d == 0 && $time_calulation->invert == 1) {
 				$time = "today";
-			} else if($time_calulation->d == 0 && $time_calulation->invert == 0) {
+			} else if($time_calulation->d == 1 && $time_calulation->invert == 0) {
 				$time = "1 day";
 			} else if($time_calulation->d == 1) {
 				$time = "$time_calulation->d day";
