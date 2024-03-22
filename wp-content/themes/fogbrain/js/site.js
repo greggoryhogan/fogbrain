@@ -562,6 +562,7 @@
         "Sobriety",
         "Special Events",
         "Travel",
+        "Work",
         "None"
       ];
     //Add exams to cpt

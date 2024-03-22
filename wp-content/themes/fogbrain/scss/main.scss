@@ -592,6 +592,11 @@ footer {
                         content: '\01F64C';
                     }
                 }
+                &.work {
+                    &:before {
+                        content: '\01F4BC';
+                    }
+                }
             }
         }
         .tag {

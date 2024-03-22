@@ -1379,7 +1379,7 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 							$sober .= $time_calulation->m .' months';
 						}
 					}
-					if($time_calulation->m > 0) {
+					if($time_calulation->d > 0) {
 						if($sober != '') {
 							$sober .= ', ';
 						}

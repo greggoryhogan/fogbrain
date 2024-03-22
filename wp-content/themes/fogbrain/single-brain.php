@@ -5,8 +5,15 @@
         the_post();
         global $post, $current_user;
         $author_id = get_the_author_meta('ID');
-        $time_zone = get_user_meta($current_user->ID,'timezone',true);
-        date_default_timezone_set($time_zone);
+        if(get_current_user_id() > 0) {
+            $user_timezone = get_user_meta($current_user->ID,'timezone',true);
+            if($user_timezone == '') {
+                $user_timezone = 'America/New_York';
+            }
+        } else {
+            $user_timezone = 'America/New_York';
+        }
+        date_default_timezone_set($user_timezone);
         ?>
         <div class="row">
             <?php fog_error_notifications();  ?>
