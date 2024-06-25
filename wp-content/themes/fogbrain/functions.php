@@ -1002,9 +1002,9 @@ function process_gpt_reminders($reminders, $author_id = null) {
 					$checkDate = new DateTime("$month $day $next_year");
 				}
 				if ($lowerBound < $upperBound) {
-					$between = $lowerBound < $checkDate && $checkDate < $upperBound;
+					$between = $lowerBound <= $checkDate && $checkDate <= $upperBound;
 				} else {
-					$between = $checkDate < $upperBound || $checkDate > $lowerBound;
+					$between = $checkDate <= $upperBound || $checkDate >= $lowerBound;
 				}
 				if($between) {
 					if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
@@ -1027,9 +1027,9 @@ function process_gpt_reminders($reminders, $author_id = null) {
 						$checkDate = new DateTime("$month_2 $day_2 $next_year");
 					}
 					if ($lowerBound < $upperBound) {
-						$between = $lowerBound < $checkDate && $checkDate < $upperBound;
+						$between = $lowerBound <= $checkDate && $checkDate <= $upperBound;
 					} else {
-						$between = $checkDate < $upperBound || $checkDate > $lowerBound;
+						$between = $checkDate <= $upperBound || $checkDate >= $lowerBound;
 					}
 					if($between) {
 						if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {

@@ -43,10 +43,14 @@
                     );
                     echo process_gpt_reminder($reminder);
                     ?>
+                    <a href="https://myfogbrain.com/u/gregg/share/social" class="home-view-all has-arrow" title="View my public profile">view all</a>
                     </div>
                 </div>
             </div>
         </div>
+        <!--<div class="col-12 col-md-9">
+                    <p>If you&rsquo;d like to see what else I&rsquo;ve saved, <a href="https://myfogbrain.com/u/gregg/share/social" class="yellow-link" title="View my public profile">view my public profile</a>.</p>
+        </div>-->
         <div class="col-12 col-md-9">
             <p>You can use Fog Brain as your personal notepad, or choose to share your reminders with friends and family. Decide which reminders are public and which ones are for your eyes only. How you use Fog Brain is entirely up to you.</p>
         </div>
