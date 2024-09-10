@@ -774,7 +774,7 @@ function get_chat_gpt_response($prompt) {
 	}";
 	
 	$data = array(
-		'model' => 'gpt-3.5-turbo', //gpt-4, gpt-3.5-turbo
+		'model' => 'gpt-4', //gpt-4, gpt-3.5-turbo, gpt-4o-mini
 		'temperature' => (int) '.1',
 		'messages' => array(
 			array(
@@ -974,7 +974,8 @@ function process_gpt_reminders($reminders, $author_id = null) {
 		$needs_update = false;
 		$hasupcoming = false;
 		$upcoming_reminders = array();
-		$lowerBound = new DateTime(date('j M'));
+		$lowerBound = new DateTime("today");
+		$lowerBound->setTime(0,0);
 		$upperBound = new DateTime(date('j M') . ' +1 month');
 		$replacements = array(
 			'spring',
@@ -987,7 +988,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 			'th',
 			'nd'
 		);
-		$todaydate = date('Ymd');
+		$todaydate = date('Ymd 00:00:00');
 		$next_year = date('Y') + 1;
 		$today = new DateTime("today");
 		foreach($reminders as $index => $reminder) {
@@ -998,7 +999,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 				$day = date('j', strtotime($reminder_date));
 				$month = date('M', strtotime($reminder_date));
 				$checkDate = new DateTime("$month $day");
-				if($checkDate->format('Ymd') <= $todaydate) {
+				if($checkDate->format('Ymd 23:59:59') <= $todaydate) {
 					$checkDate = new DateTime("$month $day $next_year");
 				}
 				if ($lowerBound < $upperBound) {
@@ -1113,7 +1114,7 @@ function process_gpt_reminders($reminders, $author_id = null) {
 	$reminders_html .= '<div class="all-reminders">';
 		foreach($reminders as $index => $reminder) {
 			if($reminder['public'] == 'true' || $is_my_page || current_user_can('administrator')) {
-				//print_r($reminder);
+				//$reminders_html .= print_r($reminder, true);
 				if($reminder['tag'] != '') {
 					$tag = $reminder['tag'];
 				} else {
@@ -1299,14 +1300,19 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 				}
 				
 				// Check if the input string contains a numeric value for the day
+				$is_today_event = false;
 				$return .= '<div class="detail-date">';
 				if($justyear) {
 					$return .= $reminder['date'];
 				} else if (preg_match('/(\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\w+\s+\d{1,2},?\s+\d{4})/', $reminder_date, $matches)) {
 					$return .= date('F jS, Y', strtotime($reminder_date));
+					if(date('F j', strtotime($reminder_date)) == date('F j', strtotime('today'))) {
+						$is_today_event = true;
+					} 
 				} else {
 					$return .= date('F, Y', strtotime($reminder_date));
 				}
+				
 				if($date_2 != '') {
 					if($justyear) {
 						$return .= ' - '.$reminder['date_2'];
@@ -1319,6 +1325,9 @@ function process_gpt_reminder($reminder, $timezone = false, $is_my_page = false)
 					$time_calulation_2 = $reminder_date_time->diff($now->setTime(0,0));
 					$time_2 = get_timespan($time_calulation_2, $reminder);
 					$return .= ', '.$time_2 .' ago';
+				}
+				if($is_today_event) {
+					$return .= ' <span class="is-today">Today</span>';
 				}
 				$return .= '</div>';
 
